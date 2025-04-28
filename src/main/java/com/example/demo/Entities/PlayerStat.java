@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.Duration;
+
 @AllArgsConstructor
 @Getter
 @Setter
@@ -16,5 +18,6 @@ public class PlayerStat {
     private Long goal;
     private Long pass;
     private Long decisivePass;
-    private Long stoppedGoal;
+    private Long blockedGoal;
+    private Duration gameTime;
 }
