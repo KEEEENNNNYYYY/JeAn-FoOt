@@ -1,5 +1,6 @@
 package com.fifa.app.RestControllers;
 
+import com.fifa.app.Entities.Player;
 import com.fifa.app.Services.PlayerService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;

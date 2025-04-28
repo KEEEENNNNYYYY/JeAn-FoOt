@@ -1,6 +1,6 @@
 package com.fifa.app.DAO;
 
-import com.example.demo.Entities.Player;
+import com.fifa.app.Entities.Player;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Repository;
 
