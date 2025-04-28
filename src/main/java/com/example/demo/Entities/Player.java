@@ -15,7 +15,8 @@ public class Player {
     private String firstName;
     private String lastName;
     private LocalDate birthDate;
-    private Country nationality;
+    private Country country;
     private Club club;
+    private int number;
 
 }
