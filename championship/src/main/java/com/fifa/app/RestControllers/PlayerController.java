@@ -18,7 +18,7 @@ public class PlayerController {
     private final PlayerService playerService;
 
     @GetMapping
-    public ResponseEntity<List<Player>> getAll(){
+    public ResponseEntity<List<Player>> getAll() {
         List<Player> stats = playerService.findAll();
         return ResponseEntity.ok(stats);
     }
