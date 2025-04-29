@@ -1,3 +1,5 @@
+package com.fifa.app.Entities;
+
 public enum Nationality {
 AFGHANISTAN,
 ALBANIA,
