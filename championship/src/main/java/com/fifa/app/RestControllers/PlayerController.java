@@ -4,9 +4,7 @@ import com.fifa.app.Entities.Player;
 import com.fifa.app.Services.PlayerService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -19,7 +17,13 @@ public class PlayerController {
 
     @GetMapping
     public ResponseEntity<List<Player>> getAll() {
-        List<Player> stats = playerService.findAll();
-        return ResponseEntity.ok(stats);
+        List<Player> players = playerService.findAll();
+        return ResponseEntity.ok(players);
+    }
+
+    @PutMapping
+    public ResponseEntity<List<Player>> createOrUpdate(@RequestBody List<Player> players) {
+        List<Player> updatedPlayers = playerService.createOrUpdatePlayers(players);
+        return ResponseEntity.ok(updatedPlayers);
     }
 }
