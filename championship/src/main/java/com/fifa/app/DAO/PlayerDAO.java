@@ -88,5 +88,54 @@ public class PlayerDAO {
         return players;
     }
 
+    public List<Player> createOrUpdatePlayers(List<Player> players) {
+        List<Player> resultList = new ArrayList<>();
 
+        String selectQuery = "SELECT COUNT(*) FROM player WHERE id = ?";
+        String insertQuery = "INSERT INTO player (id, name, number, position, nationality, age) VALUES (?, ?, ?, ?, ?, ?)";
+        String updateQuery = "UPDATE player SET name = ?, number = ?, position = ?, nationality = ?, age = ? WHERE id = ?";
+
+        try (Connection connection = dataSource.getConnection()) {
+            for (Player player : players) {
+                boolean exists;
+
+                // Vérifier si le joueur existe
+                try (PreparedStatement selectStmt = connection.prepareStatement(selectQuery)) {
+                    selectStmt.setString(1, player.getId());
+                    try (ResultSet rs = selectStmt.executeQuery()) {
+                        rs.next();
+                        exists = rs.getInt(1) > 0;
+                    }
+                }
+
+                if (exists) {
+                    try (PreparedStatement updateStmt = connection.prepareStatement(updateQuery)) {
+                        updateStmt.setString(1, player.getName());
+                        updateStmt.setInt(2, player.getNumber());
+                        updateStmt.setString(3, player.getPosition());
+                        updateStmt.setString(4, player.getNationality());
+                        updateStmt.setInt(5, player.getAge());
+                        updateStmt.setString(6, player.getId());
+                        updateStmt.executeUpdate();
+                    }
+                } else {
+                    try (PreparedStatement insertStmt = connection.prepareStatement(insertQuery)) {
+                        insertStmt.setString(1, player.getId());
+                        insertStmt.setString(2, player.getName());
+                        insertStmt.setInt(3, player.getNumber());
+                        insertStmt.setString(4, player.getPosition());
+                        insertStmt.setString(5, player.getNationality());
+                        insertStmt.setInt(6, player.getAge());
+                        insertStmt.executeUpdate();
+                    }
+                }
+
+                resultList.add(player);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors de la création ou mise à jour des joueurs", e);
+        }
+
+        return resultList;
+    }
 }
