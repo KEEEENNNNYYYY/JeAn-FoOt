@@ -14,5 +14,10 @@ public class PlayerService {
     private final PlayerDAO playerDAO;
 
     public List<Player> findAll() {
-        return playerDAO.findAll();}
+        return playerDAO.findAll();
+    }
+
+    public List<Player> createOrUpdatePlayers(List<Player> players) {
+        return playerDAO.createOrUpdatePlayers(players);
+    }
 }
