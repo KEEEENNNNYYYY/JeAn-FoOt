@@ -1,6 +1,6 @@
 package com.fifa.app.Enum;
 
-public enum ChampionshipList {
+public enum Championship {
     Premier_League,
     La_LigA,
     Bundesliga,
