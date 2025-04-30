@@ -15,11 +15,12 @@ public class Player {
 
     private String id;
     private String name;
-    private LocalDate birthDate;
+    private int age;
     private Country country;
     private Club club;
     private int number;
     private Position position;
     private Nationality nationality;
+
 
 }
