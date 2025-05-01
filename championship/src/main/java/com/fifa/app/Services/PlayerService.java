@@ -1,6 +1,7 @@
 package com.fifa.app.Services;
 
 import com.fifa.app.DAO.PlayerDAO;
+import com.fifa.app.DTO.PlayerDTO;
 import com.fifa.app.Entities.Player;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,5 +20,9 @@ public class PlayerService {
 
     public List<Player> createOrUpdatePlayers(List<Player> players) {
         return playerDAO.createOrUpdatePlayers(players);
+    }
+
+    public List<PlayerDTO> findPlayersByClubId(String clubId) {
+        return playerDAO.findPlayersByClubId(clubId);
     }
 }
