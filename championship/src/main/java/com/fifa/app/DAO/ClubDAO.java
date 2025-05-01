@@ -65,6 +65,7 @@ public class ClubDAO {
 
         return club;
     }
+
     public List<Club> createOrUpdateClubs(List<Club> clubs) {
         String insertQuery = """
         INSERT INTO club (id, name, acronym, year_creation, stadium, coach_id)
