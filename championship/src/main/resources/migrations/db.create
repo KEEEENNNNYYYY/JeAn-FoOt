@@ -71,3 +71,11 @@ ALTER TABLE player_statistic
 
 ALTER TABLE player_statistic
     ADD CONSTRAINT fk_season FOREIGN KEY (season_id) REFERENCES season(id);
+
+CREATE TABLE club_player (
+    id uuid PRIMARY KEY,
+    club_id uuid NOT NULL,
+    player_id uuid,
+    CONSTRAINT club_player_club_id_fkey FOREIGN KEY (club_id) REFERENCES club(id),
+    CONSTRAINT club_player_player_id_fkey FOREIGN KEY (player_id) REFERENCES players(id)
+);
