@@ -43,6 +43,27 @@ CREATE TABLE player_statistic (
     playing_time BIGINT DEFAULT 0,
     season_id UUID
 );
+CREATE TABLE coach (
+    id UUID NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    nationality TEXT NOT NULL
+);
+CREATE TABLE club (
+    id UUID NOT NULL,
+    name TEXT NOT NULL,
+    acronym TEXT,
+    year_creation INTEGER,
+    stadium TEXT,
+    coach_id UUID
+);
+
+-- Contraintes
+ALTER TABLE club ADD CONSTRAINT club_pkey PRIMARY KEY (id);
+ALTER TABLE club ADD CONSTRAINT club_coach_id_fkey FOREIGN KEY (coach_id) REFERENCES coach(id);
+
+-- Contraintes
+ALTER TABLE coach ADD CONSTRAINT coach_pkey PRIMARY KEY (id);
+
 
 -- 0004 : Ajout des contraintes et clés étrangères
 ALTER TABLE player_statistic
