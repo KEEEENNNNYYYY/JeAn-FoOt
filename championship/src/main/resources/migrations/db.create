@@ -1,0 +1,52 @@
+create database jean_foot;
+
+-- Création du type ENUM pour POSITION si non existant
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'position') THEN
+        CREATE TYPE position AS ENUM ('GOALKEEPER', 'DEFENDER', 'MIDFIELDER', 'FORWARD');
+    END IF;
+END$$;
+
+-- Création du type ENUM pour SEASON_STATUS si non existant
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'season_status') THEN
+        CREATE TYPE season_status AS ENUM ('NOT_STARTED', 'IN_PROGRESS', 'COMPLETED');
+    END IF;
+END$$;
+
+-- 0001 : Création de la table players
+CREATE TABLE players (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL,
+    number INTEGER NOT NULL,
+    player_position POSITION NOT NULL,
+    nationality TEXT NOT NULL,
+    age INTEGER NOT NULL,
+    CHECK (age >= 0)
+);
+
+-- 0002 : Création de la table season
+CREATE TABLE season (
+    id UUID PRIMARY KEY,
+    alias VARCHAR,
+    status SEASON_STATUS DEFAULT 'NOT_STARTED',
+    year INTEGER DEFAULT 0
+);
+
+-- 0003 : Création de la table player_statistic
+CREATE TABLE player_statistic (
+    id UUID PRIMARY KEY,
+    player_id UUID NOT NULL,
+    scored_goal INTEGER DEFAULT 0,
+    playing_time BIGINT DEFAULT 0,
+    season_id UUID
+);
+
+-- 0004 : Ajout des contraintes et clés étrangères
+ALTER TABLE player_statistic
+    ADD CONSTRAINT fk_player FOREIGN KEY (player_id) REFERENCES players(id);
+
+ALTER TABLE player_statistic
+    ADD CONSTRAINT fk_season FOREIGN KEY (season_id) REFERENCES season(id);
