@@ -3,6 +3,7 @@ package com.fifa.app.Services;
 
 import com.fifa.app.DAO.SeasonDAO;
 import com.fifa.app.Entities.Season;
+import com.fifa.app.Entities.SeasonStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +21,9 @@ public class SeasonService {
 
     public List<Season> createSeason(List<Season> seasons) {
         return seasonDAO.createSeasons(seasons);
+    }
+    public Season updateSeasonStatus(int seasonYear , SeasonStatus status) {
+        return seasonDAO.updateSeasonStatus(seasonYear , status);
     }
 
 }
