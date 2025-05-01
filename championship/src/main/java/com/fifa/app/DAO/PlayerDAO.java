@@ -20,22 +20,27 @@ public class PlayerDAO {
 
     public List<Player> findAll() {
         List<Player> playerList = new ArrayList<>();
-        String query = "SELECT \n" +
-            "  p.id AS player_id,\n" +
-            "  p.name,\n" +
-            "  p.age,\n" +
-            "  p.number,\n" +
-            "  p.player_position,\n" +
-            "  p.nationality,\n" +
-            "  c.id AS club_id,\n" +
-            "  c.name AS club_name,\n" +
-            "  c.acronym,\n" +
-            "  c.year_creation,\n" +
-            "  c.stadium,\n" +
-            "  c.coach_id\n" +
-            "FROM players p\n" +
-            "LEFT JOIN club_player cp ON p.id = cp.player_id\n" +
-            "LEFT JOIN club c ON cp.club_id = c.id;";
+        String query = """
+            SELECT
+                p.id AS player_id,
+                p.name,
+                p.age,
+                p.number,
+                p.player_position,
+                p.nationality,
+                c.id AS club_id,
+                c.name AS club_name,
+                c.acronym,
+                c.year_creation,
+                c.stadium,
+                co.id AS coach_id,
+                co.name AS coach_name,
+                co.nationality AS coach_nationality
+            FROM players p
+            LEFT JOIN club_player cp ON p.id = cp.player_id
+            LEFT JOIN club c ON cp.club_id = c.id
+            LEFT JOIN coach co ON c.coach_id = co.id;
+        """;
 
         try (
             Connection connection = dataSource.getConnection();
@@ -97,7 +102,7 @@ public class PlayerDAO {
         player.setNationality(Nationality.valueOf(rs.getString("nationality")));
         player.setAge(rs.getInt("age"));
 
-        // Mapping du club
+        // Mapping du club et du coach
         String clubId = rs.getString("club_id");
         if (clubId != null) {
             Club club = new Club();
@@ -107,10 +112,14 @@ public class PlayerDAO {
             club.setYearCreation(rs.getInt("year_creation"));
             club.setStadium(rs.getString("stadium"));
 
-            // Coach seulement si tu veux gérer ça plus tard
-            Coach coach = new Coach();
-            coach.setId(rs.getString("coach_id"));
-            club.setCoach(coach);
+            String coachId = rs.getString("coach_id");
+            if (coachId != null) {
+                Coach coach = new Coach();
+                coach.setId(coachId);
+                coach.setName(rs.getString("coach_name"));
+                coach.setNationality(Nationality.valueOf(rs.getString("coach_nationality")));
+                club.setCoach(coach);
+            }
 
             player.setClub(club);
         } else {
