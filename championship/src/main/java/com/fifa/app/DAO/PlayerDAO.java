@@ -1,9 +1,6 @@
 package com.fifa.app.DAO;
 
-import com.fifa.app.Entities.Nationality;
-import com.fifa.app.Entities.Player;
-import com.fifa.app.Entities.PlayerCriteria;
-import com.fifa.app.Entities.Position;
+import com.fifa.app.Entities.*;
 import com.fifa.app.dataSource.DataSource;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -23,7 +20,22 @@ public class PlayerDAO {
 
     public List<Player> findAll() {
         List<Player> playerList = new ArrayList<>();
-        String query = "SELECT * FROM players";
+        String query = "SELECT \n" +
+            "  p.id AS player_id,\n" +
+            "  p.name,\n" +
+            "  p.age,\n" +
+            "  p.number,\n" +
+            "  p.player_position,\n" +
+            "  p.nationality,\n" +
+            "  c.id AS club_id,\n" +
+            "  c.name AS club_name,\n" +
+            "  c.acronym,\n" +
+            "  c.year_creation,\n" +
+            "  c.stadium,\n" +
+            "  c.coach_id\n" +
+            "FROM players p\n" +
+            "LEFT JOIN club_player cp ON p.id = cp.player_id\n" +
+            "LEFT JOIN club c ON cp.club_id = c.id;";
 
         try (
             Connection connection = dataSource.getConnection();
@@ -76,16 +88,35 @@ public class PlayerDAO {
         return resultList;
     }
 
-
-    // Cette méthode doit être implémentée selon ton modèle Player
     private Player mapFromResultSet(ResultSet rs) throws SQLException {
         Player player = new Player();
-        player.setId(rs.getObject("id").toString());
+        player.setId(rs.getObject("player_id").toString());
         player.setName(rs.getString("name"));
         player.setNumber(rs.getInt("number"));
-        player.setPosition(Position.valueOf(rs.getString("player_position"))); // enum sous forme de String
+        player.setPosition(Position.valueOf(rs.getString("player_position")));
         player.setNationality(Nationality.valueOf(rs.getString("nationality")));
         player.setAge(rs.getInt("age"));
+
+        // Mapping du club
+        String clubId = rs.getString("club_id");
+        if (clubId != null) {
+            Club club = new Club();
+            club.setId(clubId);
+            club.setName(rs.getString("club_name"));
+            club.setAcronym(rs.getString("acronym"));
+            club.setYearCreation(rs.getInt("year_creation"));
+            club.setStadium(rs.getString("stadium"));
+
+            // Coach seulement si tu veux gérer ça plus tard
+            Coach coach = new Coach();
+            coach.setId(rs.getString("coach_id"));
+            club.setCoach(coach);
+
+            player.setClub(club);
+        } else {
+            player.setClub(null);
+        }
+
         return player;
     }
 }
