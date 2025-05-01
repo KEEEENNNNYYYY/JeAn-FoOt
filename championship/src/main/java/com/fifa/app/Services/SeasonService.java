@@ -2,7 +2,6 @@ package com.fifa.app.Services;
 
 
 import com.fifa.app.DAO.SeasonDAO;
-import com.fifa.app.Entities.Player;
 import com.fifa.app.Entities.Season;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,6 +16,10 @@ public class SeasonService {
 
     public List<Season> getAll() {
         return seasonDAO.findAll();
+    }
+
+    public List<Season> createSeason(List<Season> seasons) {
+        return seasonDAO.createSeasons(seasons);
     }
 
 }
