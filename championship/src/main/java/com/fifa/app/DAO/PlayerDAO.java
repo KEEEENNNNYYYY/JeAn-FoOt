@@ -1,5 +1,6 @@
 package com.fifa.app.DAO;
 
+import com.fifa.app.DTO.PlayerDTO;
 import com.fifa.app.Entities.*;
 import com.fifa.app.dataSource.DataSource;
 import lombok.AllArgsConstructor;
@@ -128,4 +129,40 @@ public class PlayerDAO {
 
         return player;
     }
+
+    public List<PlayerDTO> findPlayersByClubId(String clubId) {
+        List<PlayerDTO> players = new ArrayList<>();
+
+        String query = """
+        SELECT p.id AS player_id, p.name, p.number, p.player_position, p.nationality, p.age
+        FROM players p
+        INNER JOIN club_player cp ON p.id = cp.player_id
+        WHERE cp.club_id = ?::uuid;
+    """;
+
+        try (
+            Connection connection = dataSource.getConnection();
+            PreparedStatement stmt = connection.prepareStatement(query)
+        ) {
+            stmt.setObject(1, clubId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    PlayerDTO player = new PlayerDTO();
+                    player.setId(rs.getObject("player_id").toString());
+                    player.setName(rs.getString("name"));
+                    player.setNumber(rs.getInt("number"));
+                    player.setPosition(Position.valueOf(rs.getString("player_position")));
+                    player.setNationality(Nationality.valueOf(rs.getString("nationality")));
+                    player.setAge(rs.getInt("age"));
+
+                    players.add(player);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors de la récupération des joueurs du club", e);
+        }
+
+        return players;
+    }
+
 }
