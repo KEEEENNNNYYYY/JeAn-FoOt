@@ -4,7 +4,17 @@ info:
   description: Football
   version: 1.0.0
 servers:
-  - url: 'http://localhost:8080'
+  - url: 'http://localhost:8080/{championship}'
+    variables:
+      championship:
+        default: Seria_A
+        enum:
+          - Premier_League,
+          - La_LigA,
+          - Bundesliga,
+          - Seria_A,
+          - Ligue_1
+        description: names of all championship
 paths:
   /players:
     get:
