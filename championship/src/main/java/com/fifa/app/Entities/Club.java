@@ -13,11 +13,10 @@ import java.time.LocalDate;
 @Getter
 @Setter
 public class Club {
-    private int id;
+    private String id;
     private String name;
-    private LocalDate createDate;
     private String acronym;
-    private String country_id; // MDG pour madagascar ohatra ou jsp
-
-
+    private int yearCreation;
+    private String stadium;
+    private Coach coach;
 }
