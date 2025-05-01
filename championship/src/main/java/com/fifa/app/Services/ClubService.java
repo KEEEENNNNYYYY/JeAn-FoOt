@@ -1,17 +1,19 @@
 package com.fifa.app.Services;
 
-import com.fifa.app.DTO.ClubDTO;
+import com.fifa.app.DAO.ClubDAO;
+import com.fifa.app.Entities.Club;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class ClubService {
-    public List<ClubDTO> findAll() {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
 
-    public ClubDTO findById() {
-        throw new UnsupportedOperationException("Not supported yet.");
+    private final ClubDAO clubDAO;
+
+    public List<Club> findAll() {
+        return clubDAO.findAllClubs();
     }
 }
