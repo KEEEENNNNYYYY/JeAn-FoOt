@@ -1,13 +1,10 @@
 package com.fifa.app.RestControllers;
 
-import com.fifa.app.Entities.Player;
 import com.fifa.app.Entities.Season;
 import com.fifa.app.Services.SeasonService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -24,4 +21,9 @@ public class SeasonController {
         return ResponseEntity.ok(players);
     }
 
+    @PostMapping
+    public ResponseEntity<List<Season>> createOrUpdate(@RequestBody List<Season> season) {
+        List<Season> updatedPlayers = seasonService.createSeason(season);
+        return ResponseEntity.ok(updatedPlayers);
+    }
 }
