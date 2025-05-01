@@ -1,6 +1,7 @@
 package com.fifa.app.RestControllers;
 
 import com.fifa.app.Entities.Season;
+import com.fifa.app.Entities.SeasonStatus;
 import com.fifa.app.Services.SeasonService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -26,4 +27,18 @@ public class SeasonController {
         List<Season> updatedPlayers = seasonService.createSeason(season);
         return ResponseEntity.ok(updatedPlayers);
     }
+
+    @PutMapping("/{seasonYear}/status")
+    public ResponseEntity<Season> updateSeasonStatus(
+        @PathVariable int seasonYear,
+        @RequestBody SeasonStatus request
+    ) {
+        try {
+            Season updatedSeason = seasonService.updateSeasonStatus(seasonYear, SeasonStatus.valueOf(request.name()));
+            return ResponseEntity.ok(updatedSeason);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
+        }
+    }
+
 }
