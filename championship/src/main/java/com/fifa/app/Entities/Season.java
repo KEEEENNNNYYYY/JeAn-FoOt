@@ -10,6 +10,7 @@ import lombok.Setter;
 @Setter
 public class Season {
     private String id;
-    private String date; // 2024-2025
-    private String name;
+    private int year; // 2024-2025
+    private String alias;
+    private SeasonStatus status;
 }
