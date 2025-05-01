@@ -1,7 +1,10 @@
 package com.fifa.app.RestControllers;
 
+import com.fifa.app.DTO.PlayerDTO;
 import com.fifa.app.Entities.Club;
+import com.fifa.app.Entities.Player;
 import com.fifa.app.Services.ClubService;
+import com.fifa.app.Services.PlayerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +17,7 @@ import java.util.List;
 public class ClubController {
 
     private final ClubService service;
+    private final PlayerService playerService;
 
     @GetMapping
     public ResponseEntity<List<Club>> getAll() {
@@ -24,5 +28,14 @@ public class ClubController {
     public ResponseEntity<List<Club>> createOrUpdateClubs(@RequestBody List<Club> clubs) {
         service.createOrUpdateClubs(clubs);
         return ResponseEntity.ok(clubs);
+    }
+
+    @GetMapping("/{id}/players")
+    public ResponseEntity<List<PlayerDTO>> findPlayersByClubId(@PathVariable String id) {
+        List<PlayerDTO> players = playerService.findPlayersByClubId(id);
+        if (players.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(players);
     }
 }
