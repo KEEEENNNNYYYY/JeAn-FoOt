@@ -1,14 +1,22 @@
 package com.fifa.app.RestController;
 
+import com.fifa.app.DTO.Player;
+import com.fifa.app.Services.PlayerService;
+import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
+@AllArgsConstructor
 @RestController
 @RequestMapping("/")
 public class FifaController {
+
+    private PlayerService playerService;
 
     @GetMapping
     public String index() {
@@ -18,5 +26,10 @@ public class FifaController {
     @PostMapping("synchronization")
     public ResponseEntity<String> synchronisation(){
         return ResponseEntity.ok("Synchronization completed");
+    }
+
+    @GetMapping("bestPlayers")
+    public ResponseEntity<List<Player>> bestPlayer(){
+        return ResponseEntity.ok(playerService.getBestPlayers());
     }
 }
