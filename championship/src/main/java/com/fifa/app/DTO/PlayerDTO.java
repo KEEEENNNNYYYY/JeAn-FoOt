@@ -1,4 +1,4 @@
-package com.fifa.app.Entities;
+package com.fifa.app.DTO;
 
 import com.fifa.app.Entities.Club;
 import com.fifa.app.Entities.Country;
