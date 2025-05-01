@@ -40,7 +40,6 @@ public class SeasonDAO {
         return seasonList;
     }
 
-
     public List<Season> createSeasons(List<Season> seasons) {
         List<Season> createdSeasons = new ArrayList<>();
 
@@ -72,6 +71,56 @@ public class SeasonDAO {
 
         return createdSeasons;
     }
+
+    public Season updateSeasonStatus(int seasonYear, SeasonStatus newStatus) {
+        String selectQuery = "SELECT * FROM season WHERE year = ?";
+        String updateQuery = "UPDATE season SET status = ?::season_status WHERE id = ?::uuid";
+
+        try (Connection connection = dataSource.getConnection()) {
+            // Étape 1 : récupérer la saison correspondante
+            Season existingSeason = null;
+
+            try (PreparedStatement selectStmt = connection.prepareStatement(selectQuery)) {
+                selectStmt.setInt(1, seasonYear);
+                try (ResultSet rs = selectStmt.executeQuery()) {
+                    if (rs.next()) {
+                        existingSeason = mapFromResultSet(rs);
+                    } else {
+                        throw new RuntimeException("Saison non trouvée pour l’année " + seasonYear);
+                    }
+                }
+            }
+
+            // Étape 2 : vérifier la validité de la transition de statut
+            if (!isValidStatusTransition(existingSeason.getStatus(), newStatus)) {
+                throw new IllegalArgumentException("Changement de statut invalide : " +
+                    existingSeason.getStatus() + " → " + newStatus);
+            }
+
+            // Étape 3 : mise à jour du statut
+            try (PreparedStatement updateStmt = connection.prepareStatement(updateQuery)) {
+                updateStmt.setString(1, newStatus.name());
+                updateStmt.setObject(2, existingSeason.getId());
+                updateStmt.executeUpdate();
+            }
+
+            // Retourner la saison mise à jour
+            existingSeason.setStatus(newStatus);
+            return existingSeason;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors de la mise à jour du statut de la saison", e);
+        }
+    }
+
+    private boolean isValidStatusTransition(SeasonStatus current, SeasonStatus next) {
+        return switch (current) {
+            case NOT_STARTED -> next == SeasonStatus.STARTED;
+            case STARTED -> next == SeasonStatus.FINISHED;
+            case FINISHED -> false;
+        };
+    }
+
 
     private Season mapFromResultSet(ResultSet rs) throws SQLException {
         return new Season(
