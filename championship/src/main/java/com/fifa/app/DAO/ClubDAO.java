@@ -1,8 +1,10 @@
 package com.fifa.app.DAO;
 
+import com.fifa.app.DTO.PlayerDTO;
 import com.fifa.app.Entities.Club;
 import com.fifa.app.Entities.Coach;
 import com.fifa.app.Entities.Nationality;
+import com.fifa.app.Entities.Player;
 import com.fifa.app.dataSource.DataSource;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -111,6 +113,47 @@ public class ClubDAO {
             throw new RuntimeException("Erreur lors de la création ou mise à jour des clubs", e);
         }
         return clubs;
+    }
+
+    public List<PlayerDTO> updateClubPlayers(UUID clubId, List<PlayerDTO> players) {
+        String deleteQuery = """
+        DELETE FROM club_player WHERE club_id = ?::uuid;
+    """;
+
+        String insertClubPlayerQuery = """
+        INSERT INTO club_player (id, club_id, player_id)
+        VALUES (?::uuid, ?::uuid, ?::uuid);
+    """;
+
+        try (Connection connection = dataSource.getConnection()) {
+            connection.setAutoCommit(false); // Début de la transaction
+
+            try (
+                PreparedStatement deleteStmt = connection.prepareStatement(deleteQuery);
+                PreparedStatement insertStmt = connection.prepareStatement(insertClubPlayerQuery)
+            ) {
+                // 1. Supprimer tous les joueurs du club
+                deleteStmt.setObject(1, clubId);
+                deleteStmt.executeUpdate();
+
+                // 2. Ajouter les nouveaux joueurs
+                for (PlayerDTO player : players) {
+                    insertStmt.setObject(1, UUID.randomUUID()); // id de la table club_player
+                    insertStmt.setObject(2, clubId);
+                    insertStmt.setObject(3, player.getId());
+                    insertStmt.executeUpdate();
+                }
+
+                connection.commit(); // Fin de la transaction
+            } catch (SQLException e) {
+                connection.rollback(); // Annuler les changements en cas d'erreur
+                throw new RuntimeException("Erreur lors de la mise à jour des joueurs du club", e);
+            }
+
+            return players;
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur de connexion à la base de données", e);
+        }
     }
 
 }
