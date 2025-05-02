@@ -40,10 +40,20 @@ public class ClubController {
         return ResponseEntity.ok(players);
     }
 
-    @PutMapping("/{id}/player")
+    @PutMapping("/{id}/players")
     public ResponseEntity<List<PlayerDTO>> createOrUpdateClubPlayers(@PathVariable UUID id,@RequestBody List<PlayerDTO> players) {
         service.updateClubPlayers(id , players);
         return ResponseEntity.ok(players);
     }
+
+    @PostMapping("/{id}/players")
+    public ResponseEntity<List<PlayerDTO>> addPlayersToClub(
+        @PathVariable("id") UUID clubId,
+        @RequestBody List<PlayerDTO> players
+    ) {
+        service.addPlayersToClub(clubId, players);
+        return ResponseEntity.ok(players);
+    }
+
 
 }
