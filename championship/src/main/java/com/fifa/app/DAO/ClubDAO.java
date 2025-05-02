@@ -1,10 +1,7 @@
 package com.fifa.app.DAO;
 
 import com.fifa.app.DTO.PlayerDTO;
-import com.fifa.app.Entities.Club;
-import com.fifa.app.Entities.Coach;
-import com.fifa.app.Entities.Nationality;
-import com.fifa.app.Entities.Player;
+import com.fifa.app.Entities.*;
 import com.fifa.app.dataSource.DataSource;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -176,6 +173,112 @@ public class ClubDAO {
         } catch (SQLException e) {
             throw new RuntimeException("Erreur de connexion à la base de données", e);
         }
+    }
+
+    public List<PlayerDTO> addPlayersToClub(UUID clubId, List<PlayerDTO> players) {
+        String checkPlayerExistQuery = "SELECT * FROM players WHERE id = ?::uuid";
+        String insertPlayerQuery = """
+        INSERT INTO players (id, name, number, player_position, nationality, age)
+        VALUES (?::uuid, ?, ?, ?::\"position\", ?, ?)
+    """;
+        String checkIfPlayerInClubQuery = "SELECT club_id FROM club_player WHERE player_id = ?::uuid";
+        String insertClubPlayerQuery = """
+        INSERT INTO club_player (id, club_id, player_id)
+        VALUES (?::uuid, ?::uuid, ?::uuid)
+    """;
+
+        try (Connection connection = dataSource.getConnection()) {
+            connection.setAutoCommit(false);
+
+            try (
+                PreparedStatement checkExistStmt = connection.prepareStatement(checkPlayerExistQuery);
+                PreparedStatement insertPlayerStmt = connection.prepareStatement(insertPlayerQuery);
+                PreparedStatement checkClubStmt = connection.prepareStatement(checkIfPlayerInClubQuery);
+                PreparedStatement insertClubStmt = connection.prepareStatement(insertClubPlayerQuery)
+            ) {
+                for (PlayerDTO player : players) {
+                    UUID playerId = UUID.fromString(player.getId());
+
+                    // Vérifie si le joueur existe
+                    boolean playerExists = false;
+                    checkExistStmt.setObject(1, playerId);
+                    try (ResultSet rs = checkExistStmt.executeQuery()) {
+                        if (rs.next()) {
+                            playerExists = true;
+                        }
+                    }
+
+                    // Si le joueur n'existe pas, on le crée
+                    if (!playerExists) {
+                        insertPlayerStmt.setObject(1, playerId);
+                        insertPlayerStmt.setString(2, player.getName());
+                        insertPlayerStmt.setInt(3, player.getNumber());
+                        insertPlayerStmt.setString(4, player.getPosition().toString());
+                        insertPlayerStmt.setString(5, player.getNationality().toString());
+                        insertPlayerStmt.setInt(6, player.getAge());
+                        insertPlayerStmt.executeUpdate();
+                    }
+
+                    // Vérifie si le joueur est déjà dans un club
+                    checkClubStmt.setObject(1, playerId);
+                    try (ResultSet rs = checkClubStmt.executeQuery()) {
+                        if (rs.next()) {
+                            UUID existingClubId = UUID.fromString(rs.getString("club_id"));
+                            if (!existingClubId.equals(clubId)) {
+                                connection.rollback();
+                                throw new IllegalArgumentException("Le joueur " + player.getName() + " est déjà dans un autre club.");
+                            }
+                        } else {
+                            // Joueur non lié, on l'ajoute au club
+                            insertClubStmt.setObject(1, UUID.randomUUID());
+                            insertClubStmt.setObject(2, clubId);
+                            insertClubStmt.setObject(3, playerId);
+                            insertClubStmt.executeUpdate();
+                        }
+                    }
+                }
+
+                connection.commit();
+                return findPlayersByClubId(clubId); // Retourne tous les joueurs du club
+            } catch (SQLException e) {
+                connection.rollback();
+                throw new RuntimeException("Erreur lors de l'ajout des joueurs au club", e);
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur de connexion à la base de données", e);
+        }
+    }
+    public List<PlayerDTO> findPlayersByClubId(UUID clubId) {
+        String query = """
+        SELECT p.id, p.name, p.age, p.number, p.player_position, p.nationality
+        FROM players p
+        JOIN club_player cp ON cp.player_id = p.id
+        WHERE cp.club_id = ?::uuid
+    """;
+
+        List<PlayerDTO> result = new ArrayList<>();
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement stmt = connection.prepareStatement(query)) {
+
+            stmt.setObject(1, clubId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    PlayerDTO player = new PlayerDTO();
+                    player.setId(rs.getString("id"));
+                    player.setName(rs.getString("name"));
+                    player.setAge(rs.getInt("age"));
+                    player.setNumber(rs.getInt("number"));
+                    player.setPosition(Position.valueOf(rs.getString("player_position")));
+                    player.setNationality(Nationality.valueOf(rs.getString("nationality")));
+                    result.add(player);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors de la récupération des joueurs du club", e);
+        }
+
+        return result;
     }
 
 }
