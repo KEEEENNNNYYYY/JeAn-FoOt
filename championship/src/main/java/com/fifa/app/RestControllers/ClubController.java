@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/clubs")
@@ -38,4 +39,11 @@ public class ClubController {
         }
         return ResponseEntity.ok(players);
     }
+
+    @PutMapping("/{id}/player")
+    public ResponseEntity<List<PlayerDTO>> createOrUpdateClubPlayers(@PathVariable UUID id,@RequestBody List<PlayerDTO> players) {
+        service.updateClubPlayers(id , players);
+        return ResponseEntity.ok(players);
+    }
+
 }
