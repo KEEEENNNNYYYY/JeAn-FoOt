@@ -26,6 +26,11 @@ public class ClubService {
     public List<PlayerDTO> updateClubPlayers(UUID id, List<PlayerDTO> players) {
         return clubDAO.updateClubPlayers(id,players);
     }
-
+    public List<PlayerDTO> addPlayersToClub(UUID clubId, List<PlayerDTO> players){
+        return clubDAO.addPlayersToClub(clubId, players);
+    }
+    public List<PlayerDTO> findPlayersByClubId(UUID clubId) {
+        return clubDAO.findPlayersByClubId(clubId);
+    }
 
 }
