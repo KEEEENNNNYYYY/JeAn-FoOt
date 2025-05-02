@@ -125,51 +125,50 @@ public class ClubDAO {
     VALUES (?::uuid, ?::uuid, ?::uuid);
     """;
 
-        String upsertPlayerQuery = """
-    INSERT INTO players (id, name, number, player_position, nationality, age)
-    VALUES (?::uuid, ?, ?, ?::"position", ?, ?)
-    ON CONFLICT (id) DO UPDATE SET
-        name = EXCLUDED.name,
-        number = EXCLUDED.number,
-        player_position = EXCLUDED.player_position,
-        nationality = EXCLUDED.nationality,
-        age = EXCLUDED.age;
+        String deletePlayerFromOldClubQuery = """
+    DELETE FROM club_player WHERE player_id = ?::uuid;
     """;
 
         try (Connection connection = dataSource.getConnection()) {
-            connection.setAutoCommit(false); // Début de la transaction
+            connection.setAutoCommit(false); // Démarrer une transaction
 
             try (
                 PreparedStatement deleteStmt = connection.prepareStatement(deleteQuery);
                 PreparedStatement insertStmt = connection.prepareStatement(insertClubPlayerQuery);
-                PreparedStatement upsertStmt = connection.prepareStatement(upsertPlayerQuery)
+                PreparedStatement deleteOldClubStmt = connection.prepareStatement(deletePlayerFromOldClubQuery);
             ) {
-                // 1. Supprimer tous les joueurs du club
+                // 1. Supprimer tous les joueurs du club (pour les joueurs dans le club actuel)
                 deleteStmt.setObject(1, clubId);
                 deleteStmt.executeUpdate();
 
-                // 2. Ajouter les nouveaux joueurs et mettre à jour les joueurs existants
+                // 2. Ajouter les nouveaux joueurs au club
                 for (PlayerDTO player : players) {
-                    // Insérer dans la table club_player
-                    insertStmt.setObject(1, UUID.randomUUID()); // id de la table club_player
-                    insertStmt.setObject(2, clubId);
-                    insertStmt.setObject(3, player.getId());
-                    insertStmt.executeUpdate();
+                    // Vérifier si le joueur est déjà dans un autre club
+                    String checkPlayerQuery = "SELECT club_id FROM club_player WHERE player_id = ?::uuid";
+                    try (PreparedStatement checkStmt = connection.prepareStatement(checkPlayerQuery)) {
+                        checkStmt.setObject(1, UUID.fromString(player.getId()));
+                        try (ResultSet rs = checkStmt.executeQuery()) {
+                            if (rs.next()) {
+                                UUID existingClubId = UUID.fromString(rs.getString("club_id"));
+                                if (!existingClubId.equals(clubId)) {
+                                    // Si le joueur est déjà dans un autre club, on le supprime de ce club
+                                    deleteOldClubStmt.setObject(1, UUID.fromString(player.getId()));
+                                    deleteOldClubStmt.executeUpdate();
+                                }
+                            }
 
-                    // Mettre à jour ou insérer dans la table players
-                    upsertStmt.setObject(1, UUID.fromString(player.getId()));
-                    upsertStmt.setString(2, player.getName());
-                    upsertStmt.setInt(3, player.getNumber());
-                    upsertStmt.setString(4, player.getPosition().name());
-                    upsertStmt.setString(5, player.getNationality().name());
-                    upsertStmt.setInt(6, player.getAge());
-
-                    upsertStmt.executeUpdate();
+                            // Ensuite, on ajoute le joueur au nouveau club
+                            insertStmt.setObject(1, UUID.randomUUID()); // Générer un nouvel ID pour la relation
+                            insertStmt.setObject(2, clubId);
+                            insertStmt.setObject(3, UUID.fromString(player.getId()));
+                            insertStmt.executeUpdate();
+                        }
+                    }
                 }
 
-                connection.commit(); // Fin de la transaction
+                connection.commit(); // Confirmer la transaction
             } catch (SQLException e) {
-                connection.rollback(); // Annuler les changements en cas d'erreur
+                connection.rollback(); // Annuler si une erreur survient
                 throw new RuntimeException("Erreur lors de la mise à jour des joueurs du club", e);
             }
 
