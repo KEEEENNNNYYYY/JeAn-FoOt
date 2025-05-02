@@ -117,12 +117,23 @@ public class ClubDAO {
 
     public List<PlayerDTO> updateClubPlayers(UUID clubId, List<PlayerDTO> players) {
         String deleteQuery = """
-        DELETE FROM club_player WHERE club_id = ?::uuid;
+    DELETE FROM club_player WHERE club_id = ?::uuid;
     """;
 
         String insertClubPlayerQuery = """
-        INSERT INTO club_player (id, club_id, player_id)
-        VALUES (?::uuid, ?::uuid, ?::uuid);
+    INSERT INTO club_player (id, club_id, player_id)
+    VALUES (?::uuid, ?::uuid, ?::uuid);
+    """;
+
+        String upsertPlayerQuery = """
+    INSERT INTO players (id, name, number, player_position, nationality, age)
+    VALUES (?::uuid, ?, ?, ?::"position", ?, ?)
+    ON CONFLICT (id) DO UPDATE SET
+        name = EXCLUDED.name,
+        number = EXCLUDED.number,
+        player_position = EXCLUDED.player_position,
+        nationality = EXCLUDED.nationality,
+        age = EXCLUDED.age;
     """;
 
         try (Connection connection = dataSource.getConnection()) {
@@ -130,18 +141,30 @@ public class ClubDAO {
 
             try (
                 PreparedStatement deleteStmt = connection.prepareStatement(deleteQuery);
-                PreparedStatement insertStmt = connection.prepareStatement(insertClubPlayerQuery)
+                PreparedStatement insertStmt = connection.prepareStatement(insertClubPlayerQuery);
+                PreparedStatement upsertStmt = connection.prepareStatement(upsertPlayerQuery)
             ) {
                 // 1. Supprimer tous les joueurs du club
                 deleteStmt.setObject(1, clubId);
                 deleteStmt.executeUpdate();
 
-                // 2. Ajouter les nouveaux joueurs
+                // 2. Ajouter les nouveaux joueurs et mettre à jour les joueurs existants
                 for (PlayerDTO player : players) {
+                    // Insérer dans la table club_player
                     insertStmt.setObject(1, UUID.randomUUID()); // id de la table club_player
                     insertStmt.setObject(2, clubId);
                     insertStmt.setObject(3, player.getId());
                     insertStmt.executeUpdate();
+
+                    // Mettre à jour ou insérer dans la table players
+                    upsertStmt.setObject(1, UUID.fromString(player.getId()));
+                    upsertStmt.setString(2, player.getName());
+                    upsertStmt.setInt(3, player.getNumber());
+                    upsertStmt.setString(4, player.getPosition().name());
+                    upsertStmt.setString(5, player.getNationality().name());
+                    upsertStmt.setInt(6, player.getAge());
+
+                    upsertStmt.executeUpdate();
                 }
 
                 connection.commit(); // Fin de la transaction
