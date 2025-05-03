@@ -1,11 +1,13 @@
 package com.fifa.app.DAO;
 
+import com.fifa.app.DTO.MatchDisplayDTO;
 import com.fifa.app.Entities.*;
 import com.fifa.app.dataSource.DataSource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Repository
@@ -14,20 +16,20 @@ public class MatchDAO {
 
     private final DataSource dataSource;
 
-    public List<Match> createMatchesForSeason(int seasonYear) {
-        List<Match> createdMatches = new ArrayList<>();
+    public List<MatchDisplayDTO> createMatchesForSeason(int seasonYear) {
+        List<MatchDisplayDTO> createdMatches = new ArrayList<>();
 
+        // Requêtes SQL
         String seasonQuery = "SELECT * FROM season WHERE year = ?";
         String checkMatchQuery = "SELECT COUNT(*) FROM match WHERE season_year = ?";
         String clubQuery = "SELECT * FROM club";
         String insertMatchQuery = """
-            INSERT INTO match (id, club_playing_home_id, club_playing_away_id, stadium, match_datetime, actual_status, season_year)
-            VALUES (?::uuid, ?::uuid, ?::uuid, ?, ?, ?::match_status, ?)
-        """;
+        INSERT INTO match (id, club_playing_home_id, club_playing_away_id, stadium, match_datetime, actual_status, season_year)
+        VALUES (?::uuid, ?::uuid, ?::uuid, ?, ?, ?::match_status, ?)
+    """;
 
         try (Connection connection = dataSource.getConnection()) {
-
-            // 1. Vérifie que la saison existe
+            // Vérifie saison
             Season season = null;
             try (PreparedStatement stmt = connection.prepareStatement(seasonQuery)) {
                 stmt.setInt(1, seasonYear);
@@ -45,22 +47,21 @@ public class MatchDAO {
                 }
             }
 
-            // 2. Statut non valide
             if (season.getStatus() != SeasonStatus.STARTED) {
                 throw new IllegalArgumentException("La saison doit être STARTED.");
             }
 
-            // 3. Vérifie si les matchs sont déjà créés
+            // Vérifie matchs existants
             try (PreparedStatement stmt = connection.prepareStatement(checkMatchQuery)) {
                 stmt.setInt(1, seasonYear);
                 try (ResultSet rs = stmt.executeQuery()) {
                     if (rs.next() && rs.getInt(1) > 0) {
-                        throw new IllegalArgumentException("Les matchs de cette saison sont déjà générés.");
+                        throw new IllegalArgumentException("Les matchs sont déjà générés.");
                     }
                 }
             }
 
-            // 4. Récupère tous les clubs
+            // Clubs
             List<Club> clubs = new ArrayList<>();
             try (PreparedStatement stmt = connection.prepareStatement(clubQuery);
                  ResultSet rs = stmt.executeQuery()) {
@@ -74,24 +75,52 @@ public class MatchDAO {
                 }
             }
 
-            // 5. Génère les matchs (aller-retour)
+            // Génération des matchs
             try (PreparedStatement stmt = connection.prepareStatement(insertMatchQuery)) {
                 for (int i = 0; i < clubs.size(); i++) {
                     for (int j = 0; j < clubs.size(); j++) {
                         if (i != j) {
                             String matchId = UUID.randomUUID().toString();
+                            Club home = clubs.get(i);
+                            Club away = clubs.get(j);
+                            String stadium = "Stadium of " + home.getName();
+                            LocalDateTime matchTime = LocalDateTime.now().plusDays(i + j);
+
+                            // Insertion en DB
                             stmt.setObject(1, matchId);
-                            stmt.setObject(2, UUID.fromString(clubs.get(i).getId())); // home
-                            stmt.setObject(3, UUID.fromString(clubs.get(j).getId())); // away
-                            stmt.setString(4, "Stadium of " + clubs.get(i).getName());
-                            stmt.setTimestamp(5, Timestamp.valueOf(java.time.LocalDateTime.now().plusDays(i + j)));
+                            stmt.setObject(2, UUID.fromString(home.getId()));
+                            stmt.setObject(3, UUID.fromString(away.getId()));
+                            stmt.setString(4, stadium);
+                            stmt.setTimestamp(5, Timestamp.valueOf(matchTime));
                             stmt.setString(6, MatchStatus.NOT_STARTED.name());
                             stmt.setInt(7, seasonYear);
                             stmt.executeUpdate();
 
-                            Match match = new Match(matchId, clubs.get(i), clubs.get(j), "Stadium of " + clubs.get(i).getName(),
-                                java.time.LocalDateTime.now().plusDays(i + j), MatchStatus.NOT_STARTED);
-                            createdMatches.add(match);
+                            // Création des ClubPlaying
+                            ClubPlaying homeClub = new ClubPlaying();
+                            homeClub.setId(home.getId());
+                            homeClub.setName(home.getName());
+                            homeClub.setAcronym(home.getAcronym());
+                            homeClub.setScore(0);
+                            homeClub.setScorers(new ArrayList<>());
+
+                            ClubPlaying awayClub = new ClubPlaying();
+                            awayClub.setId(away.getId());
+                            awayClub.setName(away.getName());
+                            awayClub.setAcronym(away.getAcronym());
+                            awayClub.setScore(0);
+                            awayClub.setScorers(new ArrayList<>());
+
+                            // DTO final
+                            MatchDisplayDTO matchDto = new MatchDisplayDTO();
+                            matchDto.setId(matchId);
+                            matchDto.setClubPlayingHome(homeClub);
+                            matchDto.setClubPlayingAway(awayClub);
+                            matchDto.setStadium(stadium);
+                            matchDto.setMatchDatetime(matchTime.toLocalDate()); // ISO 8601
+                            matchDto.setActualStatus(MatchStatus.NOT_STARTED);
+
+                            createdMatches.add(matchDto);
                         }
                     }
                 }
@@ -104,4 +133,5 @@ public class MatchDAO {
 
         return createdMatches;
     }
+
 }
