@@ -1,5 +1,7 @@
 package com.fifa.app.DAO;
 
+import com.fifa.app.DTO.ClubDTO;
+import com.fifa.app.DTO.ClubStatisticDTO;
 import com.fifa.app.DTO.PlayerDTO;
 import com.fifa.app.Entities.*;
 import com.fifa.app.dataSource.DataSource;
@@ -249,6 +251,7 @@ public class ClubDAO {
             throw new RuntimeException("Erreur de connexion à la base de données", e);
         }
     }
+
     public List<PlayerDTO> findPlayersByClubId(UUID clubId) {
         String query = """
         SELECT p.id, p.name, p.age, p.number, p.player_position, p.nationality
@@ -276,6 +279,67 @@ public class ClubDAO {
             }
         } catch (SQLException e) {
             throw new RuntimeException("Erreur lors de la récupération des joueurs du club", e);
+        }
+
+        return result;
+    }
+
+    public List<ClubStatisticDTO> findBySeasonYear(int seasonYear, boolean hasToBeClassified) {
+        String query = """
+        SELECT cs.rankingpoints, cs.scoredgoals, cs.concededgoals, cs.differencegoals, cs.cleansheetnumber,
+               c.id as club_id, c.name as club_name, c.acronym, c.year_creation, c.stadium,
+               co.name as coach_name, co.nationality as coach_nationality
+        FROM club_statistic cs
+        JOIN club c ON cs.club_id = c.id
+        LEFT JOIN coach co ON c.coach_id = co.id
+        WHERE cs.season_year = ?
+        ORDER BY
+            CASE WHEN ? THEN cs.rankingpoints END DESC,
+            CASE WHEN ? THEN cs.differencegoals END DESC,
+            CASE WHEN ? THEN cs.cleansheetnumber END DESC,
+            c.name ASC
+    """;
+
+        List<ClubStatisticDTO> result = new ArrayList<>();
+
+        try (
+            Connection connection = dataSource.getConnection();
+            PreparedStatement statement = connection.prepareStatement(query)
+        ) {
+            statement.setInt(1, seasonYear);
+            for (int i = 2; i <= 4; i++) {
+                statement.setBoolean(i, hasToBeClassified);
+            }
+
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    Club club = new Club(
+                        rs.getString("club_id"),
+                        rs.getString("club_name"),
+                        rs.getString("acronym"),
+                        rs.getInt("year_creation"),
+                        rs.getString("stadium"),
+                        new Coach(
+                            rs.getString("coach_name"),
+                            rs.getString("coach_nationality")
+                        )
+                    );
+
+                    ClubStatisticDTO stat = new ClubStatisticDTO(
+                        club,
+                        rs.getInt("rankingpoints"),
+                        rs.getInt("scoredgoals"),
+                        rs.getInt("concededgoals"),
+                        rs.getInt("differencegoals"),
+                        rs.getInt("cleansheetnumber")
+                    );
+
+                    result.add(stat);
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors de la récupération des statistiques", e);
         }
 
         return result;
