@@ -17,6 +17,8 @@ public class Match {
     private String stadium;
     private LocalDateTime matchDatetime;
     private MatchStatus actualStatus;
+    private int homeScore;
+    private int awayScore;
     private List<Scorer> homeScorers;
     private List<Scorer> awayScorers;
 
