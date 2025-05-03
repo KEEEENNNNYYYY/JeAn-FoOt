@@ -90,3 +90,40 @@ CREATE TABLE club_player (
     CONSTRAINT club_player_club_id_fkey FOREIGN KEY (club_id) REFERENCES club(id)
 );
 
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'match_status') THEN
+        CREATE TYPE match_status AS ENUM ('NOT_STARTED', 'IN_PROGRESS', 'FINISHED');
+    END IF;
+END$$;
+
+CREATE TABLE match (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    club_playing_home_id UUID NOT NULL,
+    club_playing_away_id UUID NOT NULL,
+    stadium TEXT NOT NULL,
+    match_datetime TIMESTAMP NOT NULL,
+    actual_status match_status DEFAULT 'NOT_STARTED',
+
+    home_score INT DEFAULT 0,
+    away_score INT DEFAULT 0,
+
+    FOREIGN KEY (club_playing_home_id) REFERENCES club(id),
+    FOREIGN KEY (club_playing_away_id) REFERENCES club(id)
+);
+
+CREATE TABLE goal (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    match_id UUID NOT NULL,
+    player_id UUID NOT NULL,
+    club_id UUID NOT NULL, -- club du joueur (utile pour différencier équipe)
+    minute_of_goal INT,
+    own_goal BOOLEAN DEFAULT FALSE,
+
+    FOREIGN KEY (match_id) REFERENCES match(id),
+    FOREIGN KEY (player_id) REFERENCES players(id),
+    FOREIGN KEY (club_id) REFERENCES club(id)
+);
+
+
+
