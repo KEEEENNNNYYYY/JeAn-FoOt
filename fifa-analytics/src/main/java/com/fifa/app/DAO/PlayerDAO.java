@@ -3,9 +3,9 @@ package com.fifa.app.DAO;
 import com.fifa.app.DTO.Player;
 import com.fifa.app.DTO.PlayerStatistics;
 import com.fifa.app.DTO.PlayingTime;
+import com.fifa.app.Enum.DurationUnit;
 import com.fifa.app.Enum.Position;
 import lombok.AllArgsConstructor;
-import org.springframework.boot.convert.DurationUnit;
 import org.springframework.stereotype.Repository;
 
 import java.sql.*;
@@ -44,7 +44,7 @@ public class PlayerDAO {
         System.out.println("try to save players");
 
         String query = "INSERT INTO players (id, name, number, nationality, position, age, club_id, scored_goals, playing_time, playing_time_unit) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+                "VALUES (?::UUID, ?, ?, ?, ?, ?, ?::UUID, ?, ?, ?) " +
                 "ON CONFLICT (id) DO UPDATE SET " +
                 "name = EXCLUDED.name, " +
                 "number = EXCLUDED.number, " +
@@ -54,7 +54,7 @@ public class PlayerDAO {
                 "club_id = EXCLUDED.club_id, " +
                 "scored_goals = EXCLUDED.scored_goals, " +
                 "playing_time = EXCLUDED.playing_time, " +
-                "playing_time_unit = EXCLUDED.playing_time_unit;" +
+                "playing_time_unit = EXCLUDED.playing_time_unit " +
                 "RETURNING id,name,number,nationality,position,age,club_id,scored_goals,playing_time,playing_time_unit";
         players.forEach(player -> {
             try(Connection connection = dataConnection.getConnection()){
@@ -64,12 +64,13 @@ public class PlayerDAO {
                 preparedStatement.setString(2, player.getName());
                 preparedStatement.setInt(3,player.getNumber());
                 preparedStatement.setString(4,player.getNationality());
-                preparedStatement.setObject(5,player.getPosition(), Types.OTHER);
+                preparedStatement.setObject(5, player.getPosition().name(),Types.OTHER);
                 preparedStatement.setInt(6,player.getAge());
                 preparedStatement.setString(7,player.getClub().getId());
                 preparedStatement.setInt(8,player.getPlayerStatistics().getScoredGoals());
                 preparedStatement.setInt(9,player.getPlayerStatistics().getPlayingTime().getValue());
-                preparedStatement.setObject(10,player.getPlayerStatistics().getPlayingTime().getDurationUnit());
+                preparedStatement.setObject(10, player.getPlayerStatistics().getPlayingTime().getDurationUnit(),Types.OTHER);
+                System.out.println(preparedStatement);
                 ResultSet resultSet = preparedStatement.executeQuery();
                 if(resultSet.next()){
                     Player p = mapFromResultSet(resultSet);
@@ -89,7 +90,7 @@ public class PlayerDAO {
         player.setId(resultSet.getString("id"));
         player.setName(resultSet.getString("name"));
         player.setNumber(resultSet.getInt("number"));
-        player.setPosition(resultSet.getObject("position", Position.class));
+        player.setPosition(Position.valueOf(resultSet.getString("position")));
         player.setNationality(resultSet.getString("nationality"));
         player.setAge(resultSet.getInt("age"));
         player.setClub(clubDAO.getClub(resultSet.getString("club_id")));
@@ -97,7 +98,7 @@ public class PlayerDAO {
         playerStatistics.setScoredGoals(resultSet.getInt("scored_goals"));
         PlayingTime playingTime = new PlayingTime();
         playingTime.setValue(resultSet.getInt("playing_time"));
-        playingTime.setDurationUnit(resultSet.getObject("playing_time_unit", DurationUnit.class));
+        playingTime.setDurationUnit(DurationUnit.valueOf((resultSet.getString("playing_time_unit"))));
         playerStatistics.setPlayingTime(playingTime);
         player.setPlayerStatistics(playerStatistics);
         return player;

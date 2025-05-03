@@ -42,4 +42,8 @@ public class SeasonService {
     public List<Season> getAll() {
         return seasonDAO.getSeasons();
     }
+
+    public Flux<Season> saveAll(List<Season> seasons) {
+        return Flux.fromIterable(seasonDAO.saveAll(seasons));
+    }
 }

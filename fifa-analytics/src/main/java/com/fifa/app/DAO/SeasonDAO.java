@@ -5,10 +5,7 @@ import com.fifa.app.Enum.Status;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Repository;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,8 +36,20 @@ public class SeasonDAO {
     }
 
     public List<Season> saveAll(List<Season> seasons) {
-        String query =  "INSERT INTO seasons (year, season) VALUES (?, ?)";
-        throw new UnsupportedOperationException("Not supported yet.");
+        String query =  "INSERT INTO seasons (id, year, alias, status) VALUES (?::UUID, ?, ? ,?)";
+        List<Season> seasonList = new ArrayList<>();
+        seasons.forEach(season -> {
+            try(Connection connection = dataConnection.getConnection()) {
+                PreparedStatement stmt = connection.prepareStatement(query);
+                stmt.setString(1, season.getId());
+                stmt.setInt(2, season.getYear());
+                stmt.setString(3, season.getAlias());
+                stmt.setObject(4, season.getStatus().name());
+            }catch (SQLException e){
+                throw new RuntimeException(e);
+            }
+        });
+        return seasonList;
     }
 
     private Season getSeasonFromResultSet(ResultSet rs) throws SQLException {

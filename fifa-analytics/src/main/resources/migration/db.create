@@ -1,8 +1,13 @@
 DROP TYPE IF EXISTS "position" CASCADE ;
 DROP TYPE IF EXISTS "playing_time_unit" CASCADE ;
+DROP TABLE IF EXISTS seasons CASCADE ;
 DROP TABLE IF EXISTS coach CASCADE ;
 DROP TABLE IF EXISTS clubs CASCADE ;
 DROP TABLE IF EXISTS players CASCADE ;
+
+CREATE TYPE seasons_status AS ENUM(
+    'STARTED','FINISHED','NOT_STARTED'
+    );
 
 CREATE TYPE position AS ENUM(
     'STRIKER',
@@ -15,39 +20,44 @@ CREATE TYPE playing_time_unit AS ENUM(
     'SECOND',
     'MINUTE',
     'HOUR'
+    );
+
+CREATE TABLE seasons(
+                        id UUID PRIMARY KEY ,
+                        year int,
+                        alias varchar(20),
+                        status seasons_status
 );
 
 CREATE TABLE coach(
-    id varchar(150) PRIMARY KEY,
-    name varchar(150),
-    nationality varchar(150)
+                      id UUID PRIMARY KEY,
+                      name varchar(150),
+                      nationality varchar(150)
 );
 
 CREATE TABLE clubs(
-  id varchar(150) PRIMARY KEY ,
-  name varchar(150) UNIQUE ,
-  acronym varchar(5),
-  stadium varchar(150),
-  coach_id varchar(150),
-  ranking_points int,
-  scored_goals int,
-  difference_goals int,
-  clean_sheet_number int,
-  CONSTRAINT pk_coach_id FOREIGN KEY (coach_id) REFERENCES coach(id)
+                      id UUID PRIMARY KEY ,
+                      name varchar(150) UNIQUE ,
+                      acronym varchar(5),
+                      stadium varchar(150),
+                      coach_id  UUID,
+                      ranking_points int,
+                      scored_goals int,
+                      difference_goals int,
+                      clean_sheet_number int,
+                      CONSTRAINT pk_coach_id FOREIGN KEY (coach_id) REFERENCES coach(id)
 );
 
 CREATE TABLE players(
-                        id UUID,
-                        name varchar(150),
-                        number int,
-                        position "position",
-                        nationality varchar(150),
-                        age int,
-                        club_id varchar(150),
-                        scored_goals int,
-                        playing_time int,
-                        playing_time_unit playing_time_unit,
-                        PRIMARY KEY(name, position, nationality, number),
-                        playing_time_unit playing_time_unit,
-                        CONSTRAINT pk_club_id FOREIGN KEY (club_id) REFERENCES clubs(id)
+   id UUID PRIMARY KEY ,
+   name varchar(150),
+   number int,
+   position "position",
+   nationality varchar(150),
+   age int,
+   club_id UUID,
+   scored_goals int,
+   playing_time int,
+   playing_time_unit playing_time_unit,
+   CONSTRAINT pk_club_id FOREIGN KEY (club_id) REFERENCES clubs(id)
 );

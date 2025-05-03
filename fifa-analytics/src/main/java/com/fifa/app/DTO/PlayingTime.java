@@ -1,7 +1,7 @@
 package com.fifa.app.DTO;
 
+import com.fifa.app.Enum.DurationUnit;
 import lombok.Data;
-import org.springframework.boot.convert.DurationUnit;
 
 @Data
 public class PlayingTime {

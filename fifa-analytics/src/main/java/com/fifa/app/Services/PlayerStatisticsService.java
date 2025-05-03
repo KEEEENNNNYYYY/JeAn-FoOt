@@ -16,15 +16,14 @@ public class PlayerStatisticsService {
 
     private ChampionshipClient championshipClient;
 
-    public Mono<PlayerStatistics> getPlayerStatistics(String championship,String playerId,Integer season) {
+    public Mono<PlayerStatistics> getPlayerStatistics(String championship, String playerId, Integer season) {
         return championshipClient.getWebClient()
                 .get()
-                .uri("{championship}/players/{playerId}/statistics/{season}",championship, playerId, season)
+                .uri("{championship}/players/{playerId}/statistics/{season}", championship, playerId, season)
                 .retrieve()
                 .onStatus(status -> status.value() == 404, response -> {
-                    // On log l'absence, mais on continue la symphonie
                     System.out.println("Aucun endpoint pour " + championship + " (404 ignoré).");
-                    return Mono.empty(); // <- retourne un Mono vide pour ne pas lever d'exception
+                    return Mono.empty();  // Retourne Mono vide sans lever d'exception
                 })
                 .onStatus(HttpStatusCode::isError, response ->
                         response.bodyToMono(String.class)
@@ -32,9 +31,10 @@ public class PlayerStatisticsService {
                 )
                 .bodyToMono(PlayerStatistics.class)
                 .onErrorResume(e -> {
-                    // Si une exception survient malgré tout (ex: serveur down), on ignore aussi
+                    // Si une exception survient malgré tout, on l'ignore
                     System.out.println("Erreur lors de l'appel pour " + championship + " : " + e.getMessage());
-                    return Mono.empty();
+                    return Mono.empty();  // Retourne un Mono vide pour ignorer l'erreur
                 });
     }
+
 }

@@ -1,6 +1,8 @@
 package com.fifa.app.Mapper;
 
+import com.fifa.app.DTO.Club;
 import com.fifa.app.DTO.Player;
+import com.fifa.app.RestModels.ClubRest;
 import com.fifa.app.RestModels.PlayerRest;
 
 public class RestToModel {
@@ -15,5 +17,16 @@ public class RestToModel {
         player.setClub(rest.getClub());
         player.setNationality(rest.getNationality());
         return player;
+    }
+
+    public static Club apToClub(ClubRest clubRest){
+        Club club = new Club();
+        club.setId(clubRest.getId());
+        club.setName(clubRest.getName());
+        club.setYearCreation(clubRest.getYearCreation());
+        club.setStadium(clubRest.getStadium());
+        club.setCoach(clubRest.getCoach());
+        club.setAcronym(clubRest.getAcronym());
+        return club;
     }
 }
