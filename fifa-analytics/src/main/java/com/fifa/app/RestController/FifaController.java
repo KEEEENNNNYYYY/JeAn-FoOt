@@ -34,6 +34,6 @@ public class FifaController {
 
     @GetMapping("bestPlayers")
     public ResponseEntity<List<Player>> bestPlayer(){
-        return ResponseEntity.ok(playerService.getBestPlayers(1));
+        return ResponseEntity.ok(playerService.getBestPlayers());
     }
 }

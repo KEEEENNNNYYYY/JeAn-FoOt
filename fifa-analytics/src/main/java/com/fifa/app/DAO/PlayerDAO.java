@@ -19,15 +19,13 @@ public class PlayerDAO {
     private DataConnection dataConnection;
     private ClubDAO clubDAO;
 
-    public List<Player> getAllPlayers(int limit) {
+    public List<Player> getAllPlayers() {
         String query = "SELECT id,name,number,position,nationality," +
-                "age,club_id,scored_goals,playing_time,playing_time_unit FROM player" +
-                " ORDER BY scored_goals DESC LIMIT ?";
+                "age,club_id,scored_goals,playing_time,playing_time_unit FROM players";
 
         List<Player> players = new ArrayList<>();
         try (Connection connection = dataConnection.getConnection()){
             PreparedStatement preparedStatement = connection.prepareStatement(query);
-            preparedStatement.setInt(1, limit);
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
                 Player player = mapFromResultSet(resultSet);

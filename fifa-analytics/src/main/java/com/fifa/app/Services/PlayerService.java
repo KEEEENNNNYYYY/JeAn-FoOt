@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Comparator;
 import java.util.List;
 
 @AllArgsConstructor
@@ -42,9 +43,12 @@ public class PlayerService {
     }
 
 
-    public List<Player> getBestPlayers(int limit) {
-        List<Player> players = playerDAO.getAllPlayers(limit);
-        throw new UnsupportedOperationException("Not implemented yet");
+    public List<Player> getBestPlayers() {
+        List<Player> players = playerDAO.getAllPlayers();
+        players.sort(Comparator
+                .comparingInt((Player p) -> p.getPlayerStatistics().getScoredGoals()).reversed()
+                .thenComparingInt(p -> p.getPlayerStatistics().getPlayingTime().getValue()));
+        return players;
     }
 
     public List<Player> saveAll(List<Player> players) {
