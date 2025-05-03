@@ -16,4 +16,7 @@ public class Coach {
     private String id;
     private String name;
     private Nationality nationality;
+
+    public Coach(String coachName, String coachNationality) {
+    }
 }
