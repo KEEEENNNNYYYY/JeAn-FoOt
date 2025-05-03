@@ -1,5 +1,6 @@
 package com.fifa.app.RestControllers;
 
+import com.fifa.app.DTO.MatchDisplayDTO;
 import com.fifa.app.Entities.Match;
 import com.fifa.app.Services.MatchService;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +19,7 @@ public class MatchController {
     @PostMapping("/{seasonYear}")
     public ResponseEntity<?> generateMatches(@PathVariable int seasonYear) {
         try {
-            List<Match> matches = matchService.generateSeasonMatches(seasonYear);
+            List<MatchDisplayDTO> matches = matchService.generateSeasonMatches(seasonYear);
             return ResponseEntity.ok(matches);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
