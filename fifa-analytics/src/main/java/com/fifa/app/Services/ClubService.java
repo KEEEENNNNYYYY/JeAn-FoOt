@@ -14,13 +14,12 @@ public class ClubService {
 
     private ChampionshipClient championshipClient;
 
-    public List<Club> getClubs() {
-        Mono<List<Club>> clubMono = championshipClient.getWebClient()
+    public Mono<List<Club>> getClubs() {
+        return championshipClient.getWebClient()
                 .get()
                 .uri("clubs")
                 .retrieve()
                 .bodyToFlux(Club.class)
                 .collectList();
-        return clubMono.block();
     }
 }

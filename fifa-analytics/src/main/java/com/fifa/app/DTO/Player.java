@@ -1,11 +1,13 @@
 package com.fifa.app.DTO;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fifa.app.Enum.Position;
 import lombok.Data;
-import org.springframework.stereotype.Component;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Data
-public class Player {
+public class Player{
     private String id;
     private String name;
     private Integer number;

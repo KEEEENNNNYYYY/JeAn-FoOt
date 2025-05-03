@@ -9,13 +9,13 @@ CREATE TYPE position AS ENUM(
     'MIDFIELDER',
     'DEFENSE',
     'GOAL_KEEPER'
-                    );
+    );
 
 CREATE TYPE playing_time_unit AS ENUM(
     'SECOND',
     'MINUTE',
     'HOUR'
-    );
+);
 
 CREATE TABLE coach(
     id varchar(150) PRIMARY KEY,
@@ -24,28 +24,30 @@ CREATE TABLE coach(
 );
 
 CREATE TABLE clubs(
-    id varchar(150) PRIMARY KEY ,
-    name varchar(150) UNIQUE ,
-    acronym varchar(5),
-    stadium varchar(150),
-    coach_id varchar(150),
-    ranking_points int,
-    scored_goals int,
-    difference_goals int,
-    clean_sheet_number int,
-    CONSTRAINT pk_coach_id FOREIGN KEY (coach_id) REFERENCES coach(id)
+  id varchar(150) PRIMARY KEY ,
+  name varchar(150) UNIQUE ,
+  acronym varchar(5),
+  stadium varchar(150),
+  coach_id varchar(150),
+  ranking_points int,
+  scored_goals int,
+  difference_goals int,
+  clean_sheet_number int,
+  CONSTRAINT pk_coach_id FOREIGN KEY (coach_id) REFERENCES coach(id)
 );
 
 CREATE TABLE players(
-    id varchar(150) PRIMARY KEY ,
-    name varchar(150),
-    number int,
-    position "position",
-    nationality varchar(150),
-    age int,
-    club_id varchar(150),
-    scored_goals int,
-    playing_time int,
-    playing_time_unit playing_time_unit,
-    CONSTRAINT pk_club_id FOREIGN KEY (club_id) REFERENCES clubs(id)
+                        id UUID,
+                        name varchar(150),
+                        number int,
+                        position "position",
+                        nationality varchar(150),
+                        age int,
+                        club_id varchar(150),
+                        scored_goals int,
+                        playing_time int,
+                        playing_time_unit playing_time_unit,
+                        PRIMARY KEY(name, position, nationality, number),
+                        playing_time_unit playing_time_unit,
+                        CONSTRAINT pk_club_id FOREIGN KEY (club_id) REFERENCES clubs(id)
 );

@@ -1,5 +1,7 @@
 package com.fifa.app;
 
+import java.util.UUID;
+
 /**
  * Hello world!
  *
