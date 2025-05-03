@@ -19,4 +19,11 @@ public class Club {
     private int yearCreation;
     private String stadium;
     private Coach coach;
+
+    public Club(String id, String name, String acronym) {
+        this.id = id;
+        this.name = name;
+        this.acronym = acronym;
+    }
+
 }
