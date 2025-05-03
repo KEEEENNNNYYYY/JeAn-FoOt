@@ -1,7 +1,7 @@
 package com.fifa.app.Services;
 
 import com.fifa.app.DAO.MatchDAO;
-import com.fifa.app.Entities.Match;
+import com.fifa.app.DTO.MatchDisplayDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +13,7 @@ public class MatchService {
 
     private final MatchDAO matchDAO;
 
-    public List<Match> generateSeasonMatches(int seasonYear) {
+    public List<MatchDisplayDTO> generateSeasonMatches(int seasonYear) {
         return matchDAO.createMatchesForSeason(seasonYear);
     }
 }
