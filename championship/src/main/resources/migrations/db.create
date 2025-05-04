@@ -12,7 +12,7 @@ END$$;
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'season_status') THEN
-        CREATE TYPE season_status AS ENUM ('NOT_STARTED', 'IN_PROGRESS', 'COMPLETED');
+        CREATE TYPE season_status AS ENUM ('NOT_STARTED', 'STARTED', 'COMPLETED');
     END IF;
 END$$;
 
