@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/matchMaker")
@@ -46,4 +47,18 @@ public class MatchController {
         return ResponseEntity.ok(matches);
     }
 
+    @PutMapping("/{matchId}/status")
+    public ResponseEntity<?> updateMatchStatus(
+        @PathVariable UUID matchId,
+        @RequestParam String newStatus
+    ) {
+        try {
+            MatchDisplayDTO updatedMatch = matchService.updateMatchStatus(matchId, newStatus);
+            return ResponseEntity.ok(updatedMatch);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(404).body(e.getMessage());
+        }
+    }
 }
