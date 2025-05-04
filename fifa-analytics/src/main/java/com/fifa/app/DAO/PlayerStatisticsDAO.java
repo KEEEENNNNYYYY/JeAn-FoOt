@@ -1,6 +1,5 @@
 package com.fifa.app.DAO;
 
-import com.fifa.app.DTO.Player;
 import com.fifa.app.DTO.PlayerStatistics;
 import com.fifa.app.DTO.PlayingTime;
 import com.fifa.app.DTO.Season;
@@ -19,7 +18,7 @@ public class PlayerStatisticsDAO {
     private SeasonDAO seasonDAO;
 
     public List<PlayerStatistics> getPlayerStatistics(String playerId) {
-        List<PlayerStatistics> playerStatistics = new ArrayList<PlayerStatistics>();
+        List<PlayerStatistics> playerStatistics = new ArrayList<>();
         String query =  "SELECT player_id,scored_goals,playing_time,playing_time_unit,season_year FROM player_statistics WHERE player_id = ?::UUID";
         try(Connection conn = dataConnection.getConnection()) {
             PreparedStatement ps = conn.prepareStatement(query);
@@ -38,7 +37,7 @@ public class PlayerStatisticsDAO {
     public List<PlayerStatistics> saveAll(List<PlayerStatistics> playerStatistics) {
         List<PlayerStatistics> playerStatisticsList = new ArrayList<>();
         String query = "INSERT INTO player_statistics (player_id,scored_goals,playing_time,playing_time_unit,season_year) VALUES (?,?,?,?,?)" +
-                "ON CONFLICT (season_year) DO UPDATE SET " +
+                "ON CONFLICT (player_id,season_year) DO UPDATE SET " +
                 "scored_goals = EXCLUDED.scored_goals," +
                 "playing_time = EXCLUDED.playing_time," +
                 "playing_time_unit = EXCLUDED.playing_time_unit " +

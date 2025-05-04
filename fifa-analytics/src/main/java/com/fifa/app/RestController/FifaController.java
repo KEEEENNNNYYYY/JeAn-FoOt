@@ -36,7 +36,10 @@ public class FifaController {
     }
 
     @GetMapping("bestPlayers")
-    public ResponseEntity<List<Player>> bestPlayer(@RequestParam(defaultValue = "100") Integer top,@RequestParam(defaultValue = "MINUTE") DurationUnit playingTimeUnit,@RequestParam(defaultValue = "2023") Integer seasonYear){
+    public ResponseEntity<List<Player>> bestPlayer(
+            @RequestParam(defaultValue = "100") Integer top,
+            @RequestParam(defaultValue = "MINUTE") DurationUnit playingTimeUnit,
+            @RequestParam(defaultValue = "2023") Integer seasonYear){
         return ResponseEntity.ok(playerService.getBestPlayers(top,playingTimeUnit,seasonYear));
     }
 

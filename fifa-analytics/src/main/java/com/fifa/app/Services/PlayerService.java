@@ -49,10 +49,12 @@ public class PlayerService {
         return playerDAO.getAllPlayers().stream()
                 .filter(player -> player.getPlayerStatistics() != null && !player.getPlayerStatistics().isEmpty())
                 .map(player -> {
-                    PlayerStatistics stats = player.getPlayerStatistics().stream()
+                    PlayerStatistics stats = player.getPlayerStatistics()
+                            .stream()
                             .filter(stat -> stat.getSeason() != null && seasonYear.equals(stat.getSeason()))
                             .findFirst()
                             .orElse(null);
+                    System.out.println("Map: " + stats);
                     return Map.entry(player, stats);
                 })
                 .filter(entry -> entry.getValue() != null && entry.getValue().getPlayingTime().getDurationUnit() == playingTimeUnit)

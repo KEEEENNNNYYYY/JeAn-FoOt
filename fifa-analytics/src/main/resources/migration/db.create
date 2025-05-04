@@ -75,8 +75,9 @@ CREATE TABLE player_statistics(
   player_id UUID,
   scored_goals int,
   playing_time int,
-  season_year int PRIMARY KEY,
+  season_year int,
   playing_time_unit playing_time_unit,
+  PRIMARY KEY(player_id,season_year),
   CONSTRAINT pk_player_id FOREIGN KEY (player_id) REFERENCES players(id),
   CONSTRAINT pk_player_season_year FOREIGN KEY (season_year) REFERENCES seasons(year)
 );

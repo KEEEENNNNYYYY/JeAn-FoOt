@@ -14,7 +14,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class RestToModel {
     public static Player mapToPlayer(PlayerRest rest){
-        System.out.println("map to player");
         Player player = new Player();
         player.setId(rest.getId());
         player.setName(rest.getName());
