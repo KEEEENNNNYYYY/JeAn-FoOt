@@ -3,6 +3,7 @@ package com.fifa.app.Services;
 import com.fifa.app.Configuration.ChampionshipClient;
 import com.fifa.app.DAO.PlayerDAO;
 import com.fifa.app.DTO.Player;
+import com.fifa.app.Enum.DurationUnit;
 import com.fifa.app.RestModels.PlayerRest;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatusCode;
@@ -44,13 +45,14 @@ public class PlayerService {
     }
 
 
-    public List<Player> getBestPlayers(Integer top) {
+    public List<Player> getBestPlayers(Integer top, DurationUnit playingTimeUnit) {
         List<Player> players = playerDAO.getAllPlayers();
         players.sort(Comparator
                 .comparingInt((Player p) -> p.getPlayerStatistics().getScoredGoals()).reversed()
                 .thenComparingInt(p -> p.getPlayerStatistics().getPlayingTime().getValue()))
         ;
         return players.stream()
+                .filter(player -> player.getPlayerStatistics().getPlayingTime().getDurationUnit() == playingTimeUnit)
                 .limit(top)
                 .collect(Collectors.toList());
     }

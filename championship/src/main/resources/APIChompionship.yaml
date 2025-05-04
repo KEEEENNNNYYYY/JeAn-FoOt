@@ -4,7 +4,7 @@ info:
   description: Football
   version: 1.0.0
 servers:
-  - url: 'http://localhost:8080/{championship}'
+  - url: 'http://localhost:8080/'
     variables:
       championship:
         default: Seria_A
