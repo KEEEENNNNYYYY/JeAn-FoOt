@@ -1,17 +1,23 @@
 package com.fifa.app.Services;
 
-import com.fifa.app.Configuration.ChampionshipClient;
-import com.fifa.app.DTO.Club;
-import com.fifa.app.DTO.ClubStatistics;
-import com.fifa.app.DTO.Player;
-import com.fifa.app.DTO.Season;
-import com.fifa.app.Enum.Status;
+import com.fifa.app.DTO.*;
+import com.fifa.app.Enum.Championship;
+import com.fifa.app.Enum.Position;
+import com.fifa.app.Mapper.RestToModel;
+import com.fifa.app.RestModels.ClubRest;
+import com.fifa.app.RestModels.PlayerRest;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+import reactor.util.function.Tuples;
 
-import java.util.Comparator;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @Service
@@ -21,22 +27,46 @@ public class SynchronizationService {
     private PlayerStatisticsService playerStatisticsService;
     private ClubService clubService;
     private SeasonService seasonService;
-    private ClubStatisticsService clubStatisticsService;
 
-    public void synchronize() {
-        List<Season> seasons = seasonService.getSeasons();
-        Season activeSeason = seasons.stream()
-                .filter(season -> season.getStatus()!= Status.NOT_STARTED)
-                .max(Comparator.comparing(Season::getYear))
-                .orElse(null);
-
-        List<Player> players = playerService.getPlayers();
-        players.stream()
-                .peek(player -> {
-                    assert activeSeason != null;
-                    player.setPlayerStatistics(playerStatisticsService.getPlayerStatistics(player.getId(),activeSeason.getYear()));
-                });
-        List<Club> clubs = clubService.getClubs();
-        List<ClubStatistics> clubStatistics = clubStatisticsService.getClubStatistics(activeSeason.getYear());
+    public Mono<Void> synchronize() {
+        return Flux.fromArray(Championship.values())
+                .flatMapSequential(championship ->
+                        seasonService.getSeasons(championship.name())
+                                .collectList()
+                                .flatMapMany(seasons ->
+                                        // Collecte de tous les clubs (réactive)
+                                        Flux.fromIterable(seasons)
+                                                .flatMap(season ->
+                                                        clubService.getClubStatistics(championship.name(), season.getYear())
+                                                )
+                                                .collectList()
+                                                .flatMapMany(clubService::saveAll)
+                                                .thenMany(
+                                                        // Une fois les clubs enregistrés, on passe aux joueurs
+                                                        playerService.getPlayers(championship.name())
+                                                                .flatMap(playerRest -> {
+                                                                    Player player = RestToModel.mapToPlayer(playerRest);
+                                                                    return seasonService.getSeasons(championship.name())
+                                                                            .next()
+                                                                            .flatMap(season ->
+                                                                                    playerStatisticsService.getPlayerStatistics(
+                                                                                                    championship.name(),
+                                                                                                    player.getId(),
+                                                                                                    season.getYear()
+                                                                                            ).defaultIfEmpty(new PlayerStatistics())
+                                                                                            .map(stats -> {
+                                                                                                player.setPlayerStatistics(stats);
+                                                                                                return player;
+                                                                                            })
+                                                                            );
+                                                                })
+                                                )
+                                                .collectList()
+                                                .flatMap(players -> Mono.fromCallable(() -> playerService.saveAll(players))
+                                                        .subscribeOn(Schedulers.boundedElastic()))
+                                )
+                )
+                .then();
     }
+
 }

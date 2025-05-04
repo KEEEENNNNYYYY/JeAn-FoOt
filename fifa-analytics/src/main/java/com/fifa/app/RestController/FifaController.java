@@ -2,6 +2,7 @@ package com.fifa.app.RestController;
 
 import com.fifa.app.DTO.Player;
 import com.fifa.app.Services.PlayerService;
+import com.fifa.app.Services.SynchronizationService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +17,8 @@ import java.util.List;
 @RequestMapping("/")
 public class FifaController {
 
+    private SynchronizationService synchronizationService;
+
     private PlayerService playerService;
 
     @GetMapping
@@ -25,6 +28,7 @@ public class FifaController {
 
     @PostMapping("synchronization")
     public ResponseEntity<String> synchronisation(){
+        synchronizationService.synchronize().subscribe();
         return ResponseEntity.ok("Synchronization completed");
     }
 
