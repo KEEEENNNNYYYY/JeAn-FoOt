@@ -305,7 +305,6 @@ public class MatchDAO {
         return order.indexOf(next) > order.indexOf(current);
     }
 
-
     private void updateClubStatistics(Connection conn, UUID homeId, UUID awayId, int homeScore, int awayScore) throws SQLException {
         int homePoints = 0, awayPoints = 0;
         if (homeScore > awayScore) {
@@ -350,5 +349,132 @@ public class MatchDAO {
             updateAway.executeUpdate();
         }
     }
+
+    public MatchDisplayDTO findMatchById(UUID matchId) {
+        String query = """
+        SELECT
+            m.id as match_id,
+            m.stadium,
+            m.match_datetime,
+            m.actual_status,
+            m.home_score,
+            m.away_score,
+            home.id as home_id,
+            home.name as home_name,
+            home.acronym as home_acronym,
+            away.id as away_id,
+            away.name as away_name,
+            away.acronym as away_acronym
+        FROM match m
+        JOIN club home ON m.club_playing_home_id = home.id
+        JOIN club away ON m.club_playing_away_id = away.id
+        WHERE m.id = ?::uuid
+    """;
+
+        String scorersQuery = """
+        SELECT
+            g.id as goal_id,
+            g.club_id,
+            g.player_id,
+            p.name as player_name,
+            p.number as player_number,
+            g.minute_of_goal,
+            g.own_goal
+        FROM goal g
+        JOIN players p ON g.player_id = p.id
+        WHERE g.match_id = ?::uuid
+        ORDER BY g.minute_of_goal
+    """;
+
+        try (Connection conn = dataSource.getConnection()) {
+            // Récupérer les informations de base du match
+            MatchDisplayDTO matchDto;
+            try (PreparedStatement stmt = conn.prepareStatement(query)) {
+                stmt.setObject(1, matchId);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (!rs.next()) {
+                        throw new IllegalArgumentException("Match not found");
+                    }
+
+                    // Création des clubs
+                    ClubPlaying homeClub = new ClubPlaying();
+                    homeClub.setId(rs.getString("home_id"));
+                    homeClub.setName(rs.getString("home_name"));
+                    homeClub.setAcronym(rs.getString("home_acronym"));
+                    homeClub.setScore(rs.getInt("home_score"));
+                    homeClub.setScorers(new ArrayList<>());
+
+                    ClubPlaying awayClub = new ClubPlaying();
+                    awayClub.setId(rs.getString("away_id"));
+                    awayClub.setName(rs.getString("away_name"));
+                    awayClub.setAcronym(rs.getString("away_acronym"));
+                    awayClub.setScore(rs.getInt("away_score"));
+                    awayClub.setScorers(new ArrayList<>());
+
+                    // Création du DTO
+                    matchDto = new MatchDisplayDTO();
+                    matchDto.setId(rs.getString("match_id"));
+                    matchDto.setStadium(rs.getString("stadium"));
+                    matchDto.setMatchDatetime(rs.getTimestamp("match_datetime").toLocalDateTime().toLocalDate());
+                    matchDto.setActualStatus(MatchStatus.valueOf(rs.getString("actual_status")));
+                    matchDto.setClubPlayingHome(homeClub);
+                    matchDto.setClubPlayingAway(awayClub);
+                }
+            }
+
+            // Récupérer les buteurs
+            try (PreparedStatement stmt = conn.prepareStatement(scorersQuery)) {
+                stmt.setObject(1, matchId);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        Scorer scorer = new Scorer();
+
+                        // Création du joueur
+                        Player player = new Player();
+                        player.setId(rs.getString("player_id"));
+                        player.setName(rs.getString("player_name"));
+                        player.setNumber(rs.getInt("player_number"));
+                        scorer.setPlayer(player);
+
+                        scorer.setMinuteOfGoal(rs.getInt("minute_of_goal"));
+                        scorer.setOwnGoal(rs.getBoolean("own_goal"));
+
+                        // Ajouter au bon club (home ou away)
+                        String clubId = rs.getString("club_id");
+                        if (clubId.equals(matchDto.getClubPlayingHome().getId())) {
+                            matchDto.getClubPlayingHome().getScorers().add(scorer);
+                        } else if (clubId.equals(matchDto.getClubPlayingAway().getId())) {
+                            // Si c'est un but contre son camp, l'ajouter à l'équipe adverse
+                            if (scorer.isOwnGoal()) {
+                                matchDto.getClubPlayingHome().getScorers().add(scorer);
+                            } else {
+                                matchDto.getClubPlayingAway().getScorers().add(scorer);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return matchDto;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error retrieving match by ID", e);
+        }
+    }
+
+    /**
+     * logic , add goal :
+     * {
+     *     "clubId": "string",
+     *     "scorerIdentifier": "string",
+     *     "minuteOfGoal": 0
+     *   } WHERE scorerIdentifier === PlayerId
+     *  score always + 1
+     *
+     *  after the transaction , update match score ,
+     *  player stat, and club stat
+     *
+     *  own goal won't count , only updated within match stat
+     */
 
 }
