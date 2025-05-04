@@ -19,24 +19,31 @@ import java.util.stream.Collectors;
 @Service
 public class ChampionshipService {
 
-    private final SeasonService seasonService;
     private ClubService clubService;
 
-    public List<ChampionshipRank> getChampionshipRanks(Integer season,Integer limit) {
+    public List<ChampionshipRank> getChampionshipRanks(Integer season, Integer limit) {
         List<String> championships = Arrays.stream(Championship.values()).map(Enum::toString).toList();
-
         return championships.stream()
                 .map(championship -> {
                     List<Club> clubs = clubService
-                            .getClubStatistics(championship,season)
+                            .getClubStatistics(championship, season)
                             .toStream()
-                            .toList()
-                            ;
+                            .toList();
+
+                    if (clubs.isEmpty()) {
+                        return new ChampionshipRank(championship, 0);
+                    }
+
                     List<Integer> differences = clubs.stream()
                             .map(Club::getDifferenceGoals)
                             .filter(Objects::nonNull)
+                            .filter(diff -> diff >= 0) // Filtrer les valeurs négatives
                             .sorted()
                             .toList();
+
+                    if (differences.isEmpty()) {
+                        return new ChampionshipRank(championship, 0);
+                    }
 
                     double median = median(differences);
 
@@ -49,12 +56,14 @@ public class ChampionshipService {
 
     private double median(List<Integer> sortedValues) {
         int size = sortedValues.size();
-        if (size == 0) return Double.MAX_VALUE;
+        if (size == 0) return 0;
         if (size % 2 == 1) {
             return sortedValues.get(size / 2);
         } else {
             return (sortedValues.get(size / 2 - 1) + sortedValues.get(size / 2)) / 2.0;
         }
     }
+
+
 
 }

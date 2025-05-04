@@ -2,6 +2,7 @@ package com.fifa.app.RestController;
 
 import com.fifa.app.DTO.Club;
 import com.fifa.app.DTO.Player;
+import com.fifa.app.Enum.DurationUnit;
 import com.fifa.app.Services.ChampionshipService;
 import com.fifa.app.Services.ClubService;
 import com.fifa.app.Services.PlayerService;
@@ -35,8 +36,8 @@ public class FifaController {
     }
 
     @GetMapping("bestPlayers")
-    public ResponseEntity<List<Player>> bestPlayer(@RequestParam(defaultValue = "100") Integer top){
-        return ResponseEntity.ok(playerService.getBestPlayers(top));
+    public ResponseEntity<List<Player>> bestPlayer(@RequestParam(defaultValue = "100") Integer top,@RequestParam(defaultValue = "MINUTE") DurationUnit playingTimeUnit){
+        return ResponseEntity.ok(playerService.getBestPlayers(top,playingTimeUnit));
     }
 
     @GetMapping("bestClubs")
