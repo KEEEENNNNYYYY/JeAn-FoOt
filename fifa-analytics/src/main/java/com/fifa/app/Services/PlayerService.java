@@ -12,6 +12,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @Service
@@ -43,12 +44,15 @@ public class PlayerService {
     }
 
 
-    public List<Player> getBestPlayers() {
+    public List<Player> getBestPlayers(Integer top) {
         List<Player> players = playerDAO.getAllPlayers();
         players.sort(Comparator
                 .comparingInt((Player p) -> p.getPlayerStatistics().getScoredGoals()).reversed()
-                .thenComparingInt(p -> p.getPlayerStatistics().getPlayingTime().getValue()));
-        return players;
+                .thenComparingInt(p -> p.getPlayerStatistics().getPlayingTime().getValue()))
+        ;
+        return players.stream()
+                .limit(top)
+                .collect(Collectors.toList());
     }
 
     public List<Player> saveAll(List<Player> players) {

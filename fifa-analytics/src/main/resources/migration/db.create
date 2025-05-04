@@ -4,12 +4,13 @@ DROP TABLE IF EXISTS seasons CASCADE ;
 DROP TABLE IF EXISTS coach CASCADE ;
 DROP TABLE IF EXISTS clubs CASCADE ;
 DROP TABLE IF EXISTS players CASCADE ;
+DROP TYPE IF EXISTS seasons_status CASCADE ;
 
 CREATE TYPE seasons_status AS ENUM(
     'STARTED','FINISHED','NOT_STARTED'
     );
 
-CREATE TYPE position AS ENUM(
+CREATE TYPE "position" AS ENUM(
     'STRIKER',
     'MIDFIELDER',
     'DEFENSE',
@@ -36,16 +37,17 @@ CREATE TABLE coach(
 );
 
 CREATE TABLE clubs(
-                      id UUID PRIMARY KEY ,
-                      name varchar(150) UNIQUE ,
-                      acronym varchar(5),
-                      stadium varchar(150),
-                      coach_id  UUID,
-                      ranking_points int,
-                      scored_goals int,
-                      difference_goals int,
-                      clean_sheet_number int,
-                      CONSTRAINT pk_coach_id FOREIGN KEY (coach_id) REFERENCES coach(id)
+  id UUID PRIMARY KEY ,
+  name varchar(150) UNIQUE ,
+  acronym varchar(5),
+  stadium varchar(150),
+  year_creation int,
+  coach_id  UUID,
+  ranking_points int,
+  scored_goals int,
+  difference_goals int,
+  clean_sheet_number int,
+  CONSTRAINT pk_coach_id FOREIGN KEY (coach_id) REFERENCES coach(id)
 );
 
 CREATE TABLE players(

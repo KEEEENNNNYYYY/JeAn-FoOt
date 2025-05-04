@@ -1,14 +1,14 @@
 package com.fifa.app.RestController;
 
+import com.fifa.app.DTO.Club;
 import com.fifa.app.DTO.Player;
+import com.fifa.app.Services.ChampionshipService;
+import com.fifa.app.Services.ClubService;
 import com.fifa.app.Services.PlayerService;
 import com.fifa.app.Services.SynchronizationService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -17,6 +17,8 @@ import java.util.List;
 @RequestMapping("/")
 public class FifaController {
 
+    private final ClubService clubService;
+    private final ChampionshipService championshipService;
     private SynchronizationService synchronizationService;
 
     private PlayerService playerService;
@@ -33,7 +35,17 @@ public class FifaController {
     }
 
     @GetMapping("bestPlayers")
-    public ResponseEntity<List<Player>> bestPlayer(){
-        return ResponseEntity.ok(playerService.getBestPlayers());
+    public ResponseEntity<List<Player>> bestPlayer(@RequestParam(defaultValue = "100") Integer top){
+        return ResponseEntity.ok(playerService.getBestPlayers(top));
+    }
+
+    @GetMapping("bestClubs")
+    public ResponseEntity<List<Club>> bestClub(@RequestParam(defaultValue = "100") Integer top){
+        return ResponseEntity.ok(clubService.getBestClubs(top));
+    }
+
+    @GetMapping("championshipRankings")
+    public ResponseEntity<Object> championshipRanking(@RequestParam(defaultValue = "10") Integer top, @RequestParam(defaultValue = "2023") Integer season){
+        return ResponseEntity.ok(championshipService.getChampionshipRanks(season,top));
     }
 }
