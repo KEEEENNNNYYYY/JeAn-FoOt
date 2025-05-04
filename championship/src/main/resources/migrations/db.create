@@ -1,10 +1,12 @@
 create database jean_foot;
+-- Activer l'extension pour UUID si ce n'est pas déjà fait
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Création du type ENUM pour POSITION si non existant
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'position') THEN
-        CREATE TYPE position AS ENUM ('GOALKEEPER', 'DEFENDER', 'MIDFIELDER', 'FORWARD');
+        CREATE TYPE "position" AS ENUM ('GOAL_KEEPER', 'DEFENDER', 'MIDFIELDER', 'STRIKER');
     END IF;
 END$$;
 
@@ -21,7 +23,7 @@ CREATE TABLE players (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
     number INTEGER NOT NULL,
-    player_position POSITION NOT NULL,
+    player_position "position" NOT NULL,
     nationality TEXT NOT NULL,
     age INTEGER NOT NULL,
     CHECK (age >= 0)
@@ -29,15 +31,16 @@ CREATE TABLE players (
 
 -- 0002 : Création de la table season
 CREATE TABLE season (
-    id UUID PRIMARY KEY,
+    id UUID DEFAULT uuid_generate_v4() UNIQUE,
     alias VARCHAR,
     status SEASON_STATUS DEFAULT 'NOT_STARTED',
-    year INTEGER DEFAULT 0
+    year INTEGER DEFAULT 2000,
+    PRIMARY KEY(alias,year)
 );
 
 -- 0003 : Création de la table player_statistic
 CREATE TABLE player_statistic (
-    id UUID PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     player_id UUID NOT NULL,
     scored_goal INTEGER DEFAULT 0,
     playing_time BIGINT DEFAULT 0,
@@ -48,6 +51,10 @@ CREATE TABLE coach (
     name VARCHAR(255) NOT NULL,
     nationality TEXT NOT NULL
 );
+
+-- Contraintes
+ALTER TABLE coach ADD CONSTRAINT coach_pkey PRIMARY KEY (id);
+
 CREATE TABLE club (
     id UUID NOT NULL,
     name TEXT NOT NULL,
@@ -60,10 +67,6 @@ CREATE TABLE club (
 -- Contraintes
 ALTER TABLE club ADD CONSTRAINT club_pkey PRIMARY KEY (id);
 ALTER TABLE club ADD CONSTRAINT club_coach_id_fkey FOREIGN KEY (coach_id) REFERENCES coach(id);
-
--- Contraintes
-ALTER TABLE coach ADD CONSTRAINT coach_pkey PRIMARY KEY (id);
-
 
 -- 0004 : Ajout des contraintes et clés étrangères
 ALTER TABLE player_statistic
