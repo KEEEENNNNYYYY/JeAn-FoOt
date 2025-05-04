@@ -7,6 +7,8 @@ import com.fifa.app.Enum.DurationUnit;
 import com.fifa.app.Enum.Position;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -18,10 +20,27 @@ public class PlayerDAO {
 
     private DataConnection dataConnection;
     private ClubDAO clubDAO;
+    private PlayerStatisticsDAO playerStatisticsDAO;
+
+    public Player getById(String id) {
+        String query = "SELECT id,name,number,position,nationality," +
+                "age,club_id FROM players WHERE id=?";
+        try (Connection connection = dataConnection.getConnection()){
+            PreparedStatement preparedStatement = connection.prepareStatement(query);
+            preparedStatement.setObject(1, id,Types.OTHER);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if (resultSet.next()) {
+                return  mapFromResultSet(resultSet);
+            }
+        }catch (SQLException e){
+            throw new RuntimeException(e);
+        }
+        return null;
+    }
 
     public List<Player> getAllPlayers() {
         String query = "SELECT id,name,number,position,nationality," +
-                "age,club_id,scored_goals,playing_time,playing_time_unit FROM players";
+                "age,club_id FROM players";
 
         List<Player> players = new ArrayList<>();
         try (Connection connection = dataConnection.getConnection()){
@@ -41,19 +60,16 @@ public class PlayerDAO {
         List<Player> savedPlayers = new ArrayList<>();
         System.out.println("try to save players");
 
-        String query = "INSERT INTO players (id, name, number, nationality, position, age, club_id, scored_goals, playing_time, playing_time_unit) " +
-                "VALUES (?::UUID, ?, ?, ?, ?, ?, ?::UUID, ?, ?, ?) " +
+        String query = "INSERT INTO players (id, name, number, nationality, position, age, club_id) " +
+                "VALUES (?::UUID, ?, ?, ?, ?, ?, ?::UUID) " +
                 "ON CONFLICT (id) DO UPDATE SET " +
                 "name = EXCLUDED.name, " +
                 "number = EXCLUDED.number, " +
                 "nationality = EXCLUDED.nationality, " +
                 "position = EXCLUDED.position, " +
                 "age = EXCLUDED.age, " +
-                "club_id = EXCLUDED.club_id, " +
-                "scored_goals = EXCLUDED.scored_goals, " +
-                "playing_time = EXCLUDED.playing_time, " +
-                "playing_time_unit = EXCLUDED.playing_time_unit " +
-                "RETURNING id,name,number,nationality,position,age,club_id,scored_goals,playing_time,playing_time_unit";
+                "club_id = EXCLUDED.club_id " +
+                "RETURNING id,name,number,nationality,position,age,club_id";
         players.forEach(player -> {
             try(Connection connection = dataConnection.getConnection()){
 
@@ -65,14 +81,9 @@ public class PlayerDAO {
                 preparedStatement.setObject(5, player.getPosition().name(),Types.OTHER);
                 preparedStatement.setInt(6,player.getAge());
                 preparedStatement.setString(7,player.getClub().getId());
-                preparedStatement.setInt(8,player.getPlayerStatistics().getScoredGoals());
-                preparedStatement.setInt(9,player.getPlayerStatistics().getPlayingTime().getValue());
-                preparedStatement.setObject(10, player.getPlayerStatistics().getPlayingTime().getDurationUnit(),Types.OTHER);
-                System.out.println(preparedStatement);
                 ResultSet resultSet = preparedStatement.executeQuery();
                 if(resultSet.next()){
                     Player p = mapFromResultSet(resultSet);
-                    System.out.println(p);
                     savedPlayers.add(p);
                     System.out.println("saved 1 player");
                 }
@@ -84,6 +95,7 @@ public class PlayerDAO {
     }
 
     private Player mapFromResultSet(ResultSet resultSet) throws SQLException {
+        List<PlayerStatistics> playerStatistics = playerStatisticsDAO.getPlayerStatistics(resultSet.getString("id"));
         Player player = new Player();
         player.setId(resultSet.getString("id"));
         player.setName(resultSet.getString("name"));
@@ -92,13 +104,14 @@ public class PlayerDAO {
         player.setNationality(resultSet.getString("nationality"));
         player.setAge(resultSet.getInt("age"));
         player.setClub(clubDAO.getClub(resultSet.getString("club_id")));
-        PlayerStatistics playerStatistics = new PlayerStatistics();
-        playerStatistics.setScoredGoals(resultSet.getInt("scored_goals"));
-        PlayingTime playingTime = new PlayingTime();
-        playingTime.setValue(resultSet.getInt("playing_time"));
-        playingTime.setDurationUnit(DurationUnit.valueOf((resultSet.getString("playing_time_unit"))));
-        playerStatistics.setPlayingTime(playingTime);
-        player.setPlayerStatistics(playerStatistics);
+        if (playerStatistics != null) {
+            player.setPlayerStatistics(playerStatistics);
+        }
         return player;
+    }
+
+    public Mono<Player> getByIdReactive(String playerId) {
+        return Mono.fromCallable(() -> getById(playerId))
+                .subscribeOn(Schedulers.boundedElastic());
     }
 }

@@ -5,6 +5,8 @@ DROP TABLE IF EXISTS coach CASCADE ;
 DROP TABLE IF EXISTS clubs CASCADE ;
 DROP TABLE IF EXISTS players CASCADE ;
 DROP TYPE IF EXISTS seasons_status CASCADE ;
+DROP TABLE IF EXISTS player_statistics CASCADE;
+DROP TABLE IF EXISTS club_statistics;
 
 CREATE TYPE seasons_status AS ENUM(
     'STARTED','FINISHED','NOT_STARTED'
@@ -24,16 +26,17 @@ CREATE TYPE playing_time_unit AS ENUM(
     );
 
 CREATE TABLE seasons(
-                        id UUID PRIMARY KEY ,
-                        year int,
-                        alias varchar(20),
-                        status seasons_status
+    id UUID,
+    year int UNIQUE,
+    alias varchar(20),
+    status seasons_status,
+    PRIMARY KEY (year,alias)
 );
 
 CREATE TABLE coach(
-                      id UUID PRIMARY KEY,
-                      name varchar(150),
-                      nationality varchar(150)
+  id UUID PRIMARY KEY,
+  name varchar(150),
+  nationality varchar(150)
 );
 
 CREATE TABLE clubs(
@@ -43,11 +46,18 @@ CREATE TABLE clubs(
   stadium varchar(150),
   year_creation int,
   coach_id  UUID,
+  CONSTRAINT pk_coach_id FOREIGN KEY (coach_id) REFERENCES coach(id)
+);
+
+CREATE TABLE club_statistics(
+  club_id UUID,
+  season_year int,
   ranking_points int,
   scored_goals int,
   difference_goals int,
   clean_sheet_number int,
-  CONSTRAINT pk_coach_id FOREIGN KEY (coach_id) REFERENCES coach(id)
+  CONSTRAINT pk_club_id FOREIGN KEY (club_id) REFERENCES clubs(id),
+  CONSTRAINT pk_season_year FOREIGN KEY (season_year) REFERENCES seasons(year)
 );
 
 CREATE TABLE players(
@@ -58,8 +68,15 @@ CREATE TABLE players(
    nationality varchar(150),
    age int,
    club_id UUID,
-   scored_goals int,
-   playing_time int,
-   playing_time_unit playing_time_unit,
    CONSTRAINT pk_club_id FOREIGN KEY (club_id) REFERENCES clubs(id)
+);
+
+CREATE TABLE player_statistics(
+  player_id UUID,
+  scored_goals int,
+  playing_time int,
+  season_year int PRIMARY KEY,
+  playing_time_unit playing_time_unit,
+  CONSTRAINT pk_player_id FOREIGN KEY (player_id) REFERENCES players(id),
+  CONSTRAINT pk_player_season_year FOREIGN KEY (season_year) REFERENCES seasons(year)
 );

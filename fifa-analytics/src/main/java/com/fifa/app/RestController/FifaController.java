@@ -36,17 +36,17 @@ public class FifaController {
     }
 
     @GetMapping("bestPlayers")
-    public ResponseEntity<List<Player>> bestPlayer(@RequestParam(defaultValue = "100") Integer top,@RequestParam(defaultValue = "MINUTE") DurationUnit playingTimeUnit){
-        return ResponseEntity.ok(playerService.getBestPlayers(top,playingTimeUnit));
+    public ResponseEntity<List<Player>> bestPlayer(@RequestParam(defaultValue = "100") Integer top,@RequestParam(defaultValue = "MINUTE") DurationUnit playingTimeUnit,@RequestParam(defaultValue = "2023") Integer seasonYear){
+        return ResponseEntity.ok(playerService.getBestPlayers(top,playingTimeUnit,seasonYear));
     }
 
     @GetMapping("bestClubs")
-    public ResponseEntity<List<Club>> bestClub(@RequestParam(defaultValue = "100") Integer top){
-        return ResponseEntity.ok(clubService.getBestClubs(top));
+    public ResponseEntity<List<Club>> bestClub(@RequestParam(defaultValue = "100") Integer top,@RequestParam(defaultValue = "2023") Integer seasonYear){
+        return ResponseEntity.ok(clubService.getBestClubs(top,seasonYear));
     }
 
-    @GetMapping("championshipRankings")
-    public ResponseEntity<Object> championshipRanking(@RequestParam(defaultValue = "10") Integer top, @RequestParam(defaultValue = "2023") Integer season){
-        return ResponseEntity.ok(championshipService.getChampionshipRanks(season,top));
-    }
+//    @GetMapping("championshipRankings")
+//    public ResponseEntity<Object> championshipRanking(@RequestParam(defaultValue = "10") Integer top, @RequestParam(defaultValue = "2023") Integer season){
+//        return ResponseEntity.ok(championshipService.getChampionshipRanks(season,top));
+//    }
 }

@@ -1,6 +1,7 @@
 package com.fifa.app.DAO;
 
 import com.fifa.app.DTO.Club;
+import com.fifa.app.DTO.ClubStat;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -13,9 +14,11 @@ import java.util.List;
 public class ClubDAO {
 
     private DataConnection dataConnection;
+    private ClubStatDAO clubStatDAO;
+
     public List<Club> getAll() {
         List<Club> clubs = new ArrayList<>();
-        String query = "SELECT id, name, acronym,year_creation, stadium,coach_id,ranking_points,scored_goals,difference_goals,clean_sheet_number  FROM clubs";
+        String query = "SELECT id, name, acronym,year_creation, stadium  FROM clubs";
         try (Connection connection = dataConnection.getConnection()){
             Statement statement = connection.createStatement();
             ResultSet resultSet = statement.executeQuery(query);
@@ -30,7 +33,7 @@ public class ClubDAO {
     }
 
     public Club getClub(String clubId) {
-        String query = "SELECT id, name, acronym,year_creation, stadium,coach_id,ranking_points,scored_goals,difference_goals,clean_sheet_number  FROM clubs WHERE id = ?::UUID";
+        String query = "SELECT id, name, acronym,year_creation, stadium FROM clubs WHERE id = ?::UUID";
         try (Connection connection = dataConnection.getConnection()){
             PreparedStatement preparedStatement = connection.prepareStatement(query);
             preparedStatement.setString(1, clubId);
@@ -46,20 +49,16 @@ public class ClubDAO {
 
     public List<Club> saveAll(List<Club> clubs) {
         List<Club> clubList = new ArrayList<>();
-        String query =  "INSERT INTO clubs(id, name, acronym, year_creation,stadium,coach_id,ranking_points,scored_goals,difference_goals,clean_sheet_number )" +
-                "VALUES (?::UUID,?,?,?,?,?::UUID,?,?,?,?)" +
+        String query =  "INSERT INTO clubs(id, name, acronym, year_creation,stadium,coach_id)" +
+                "VALUES (?::UUID,?,?,?,?,?::UUID)" +
                 "ON CONFLICT (id) " +
                 "DO UPDATE SET " +
                 "name = EXCLUDED.name," +
                 "acronym = EXCLUDED.acronym," +
                 "year_creation = EXCLUDED.year_creation," +
-                "stadium = EXCLUDED.stadium," +
-                "coach_id = EXCLUDED.coach_id," +
-                "ranking_points = EXCLUDED.ranking_points," +
-                "scored_goals = EXCLUDED.scored_goals," +
-                "difference_goals = EXCLUDED.difference_goals," +
-                "clean_sheet_number = EXCLUDED.clean_sheet_number " +
-                "RETURNING id, name, acronym, year_creation,stadium,coach_id,ranking_points,scored_goals,difference_goals,clean_sheet_number";
+                "stadium = EXCLUDED.stadium ," +
+                "coach_id = EXCLUDED.coach_id " +
+                "RETURNING id, name, acronym, year_creation,stadium,coach_id";
         clubs.forEach((club) -> {
             System.out.println("clubId: " + club.getId());
             try(Connection connection = dataConnection.getConnection()){
@@ -70,10 +69,6 @@ public class ClubDAO {
                 preparedStatement.setObject(4, club.getYearCreation());
                 preparedStatement.setString(5, club.getStadium());
                 preparedStatement.setString(6,club.getCoach().getId());
-                preparedStatement.setInt(7, club.getRankingPoints());
-                preparedStatement.setInt(8, club.getScoredGoals());
-                preparedStatement.setInt(9, club.getDifferenceGoals());
-                preparedStatement.setInt(10, club.getCleanSheetNumber());
                 ResultSet resultSet = preparedStatement.executeQuery();
                 if (resultSet.next()) {
                     Club clubFromDB = mapFromResultSet(resultSet);
@@ -87,16 +82,16 @@ public class ClubDAO {
     }
 
     public Club mapFromResultSet(ResultSet resultSet) throws SQLException {
+        List<ClubStat> clubStats = clubStatDAO.getClubStatsByClubId(resultSet.getString("id"));
         Club club = new Club();
         club.setId(resultSet.getString("id"));
         club.setName(resultSet.getString("name"));
         club.setAcronym(resultSet.getString("acronym"));
         club.setYearCreation(resultSet.getInt("year_creation"));
         club.setStadium(resultSet.getString("stadium"));
-        club.setScoredGoals(resultSet.getInt("scored_goals"));
-        club.setDifferenceGoals(resultSet.getInt("difference_goals"));
-        club.setCleanSheetNumber(resultSet.getInt("clean_sheet_number"));
-        club.setRankingPoints(resultSet.getInt("ranking_points"));
+        if(clubStats != null){
+            club.setClubStats(clubStats);
+        }
         return club;
     }
 

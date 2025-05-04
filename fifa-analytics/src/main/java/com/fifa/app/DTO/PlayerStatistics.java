@@ -6,6 +6,8 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 public class PlayerStatistics {
+    private Player player;
     private Integer scoredGoals;
     private PlayingTime playingTime;
+    private Integer season;
 }

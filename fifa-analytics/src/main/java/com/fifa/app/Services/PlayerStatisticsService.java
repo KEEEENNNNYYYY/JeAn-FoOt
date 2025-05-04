@@ -1,13 +1,22 @@
 package com.fifa.app.Services;
 
 import com.fifa.app.Configuration.ChampionshipClient;
+import com.fifa.app.DAO.PlayerDAO;
+import com.fifa.app.DAO.PlayerStatisticsDAO;
+import com.fifa.app.DTO.Player;
 import com.fifa.app.DTO.PlayerStatistics;
+import com.fifa.app.Mapper.RestToModel;
+import com.fifa.app.RestModels.PlayerStatisticsRest;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
+
+import java.util.List;
 
 @AllArgsConstructor
 @Data
@@ -15,6 +24,8 @@ import reactor.core.publisher.Mono;
 public class PlayerStatisticsService {
 
     private ChampionshipClient championshipClient;
+    private PlayerStatisticsDAO playerStatisticsDAO;
+    private PlayerDAO playerDAO;
 
     public Mono<PlayerStatistics> getPlayerStatistics(String championship, String playerId, Integer season) {
         return championshipClient.getWebClient()
@@ -29,12 +40,21 @@ public class PlayerStatisticsService {
                         response.bodyToMono(String.class)
                                 .flatMap(body -> Mono.error(new RuntimeException("Erreur HTTP " + response.statusCode() + ": " + body)))
                 )
-                .bodyToMono(PlayerStatistics.class)
+                .bodyToMono(PlayerStatisticsRest.class)
+                .doOnNext(playerStatisticsRest -> {
+                    playerStatisticsRest.setPlayerId(playerId);
+                    playerStatisticsRest.setSeasonYear(season);
+                })
+                .map(RestToModel::mapToPlayerStatistics)
                 .onErrorResume(e -> {
-                    // Si une exception survient malgré tout, on l'ignore
-                    System.out.println("Erreur lors de l'appel pour " + championship + " : " + e.getMessage());
-                    return Mono.empty();  // Retourne un Mono vide pour ignorer l'erreur
+                    System.out.println("Erreur lors de l'appel pour " + championship + " : inside statics " + e.getMessage());
+                    return Mono.empty();
                 });
+    }
+
+    public Mono<List<PlayerStatistics>> saveAll(List<PlayerStatistics> playerStatistics) {
+        return Mono.fromCallable(()->playerStatisticsDAO.saveAll(playerStatistics))
+                .subscribeOn(Schedulers.boundedElastic());
     }
 
 }

@@ -16,6 +16,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.util.function.Tuples;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,43 +31,42 @@ public class SynchronizationService {
 
     public Mono<Void> synchronize() {
         return Flux.fromArray(Championship.values())
-                .flatMapSequential(championship ->
+                .flatMap(championship ->
                         seasonService.getSeasons(championship.name())
                                 .collectList()
-                                .flatMapMany(seasons ->
-                                        // Collecte de tous les clubs (réactive)
-                                        Flux.fromIterable(seasons)
-                                                .flatMap(season ->
-                                                        clubService.getClubStatistics(championship.name(), season.getYear())
-                                                )
+                                .flatMap(seasons -> seasonService.saveAll(seasons)
+                                        .thenMany(Flux.fromIterable(seasons))
+                                        .flatMap(season ->
+                                                clubService.getClubStatistics(championship.name(), season.getYear())
+                                                        .map(RestToModel::mapToClub)
+                                                        .collectList()
+                                                        .flatMap(clubs -> clubService.saveAll(clubs).then())
+                                        )
+                                        .then()
+                                        .then(playerService.getPlayers(championship.name())
+                                                .map(RestToModel::mapToPlayer)
                                                 .collectList()
-                                                .flatMapMany(clubService::saveAll)
-                                                .thenMany(
-                                                        // Une fois les clubs enregistrés, on passe aux joueurs
-                                                        playerService.getPlayers(championship.name())
-                                                                .flatMap(playerRest -> {
-                                                                    Player player = RestToModel.mapToPlayer(playerRest);
-                                                                    return seasonService.getSeasons(championship.name())
-                                                                            .next()
-                                                                            .flatMap(season ->
-                                                                                    playerStatisticsService.getPlayerStatistics(
-                                                                                                    championship.name(),
-                                                                                                    player.getId(),
-                                                                                                    season.getYear()
-                                                                                            ).defaultIfEmpty(new PlayerStatistics())
-                                                                                            .map(stats -> {
-                                                                                                player.setPlayerStatistics(stats);
-                                                                                                return player;
-                                                                                            })
-                                                                            );
-                                                                })
-                                                )
-                                                .collectList()
-                                                .flatMap(players -> Mono.fromCallable(() -> playerService.saveAll(players))
-                                                        .subscribeOn(Schedulers.boundedElastic()))
-                                )
-                )
-                .then();
-    }
+                                                .flatMap(players ->
+                                                        playerService.saveAll(players)
+                                                                        .then(
+                                                        Flux.fromIterable(players)
 
+                                                                .flatMap(player ->
+                                                                        seasonService.getSeasons(championship.name())
+                                                                                .next()
+                                                                                .flatMap(season ->
+                                                                                        playerStatisticsService.getPlayerStatistics(
+                                                                                                championship.name(),
+                                                                                                player.getId(),
+                                                                                                season.getYear()
+                                                                                        )
+                                                                                )
+                                                                )
+                                                                .collectList()
+                                                                .flatMap(playerStatisticsService::saveAll)) // Lambda instead of method reference
+                                                ))
+                                        )
+                                )
+                                .then();
+    }
 }

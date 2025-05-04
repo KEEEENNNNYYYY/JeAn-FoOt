@@ -6,6 +6,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fifa.app.Enum.Position;
 import lombok.Data;
 
+import java.util.List;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 public class Player{
@@ -17,5 +19,5 @@ public class Player{
     private Integer age;
     @JsonIgnore
     private Club club;
-    private PlayerStatistics playerStatistics;
+    private List<PlayerStatistics> playerStatistics;
 }
