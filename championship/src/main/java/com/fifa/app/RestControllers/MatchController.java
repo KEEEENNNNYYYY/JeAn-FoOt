@@ -1,5 +1,6 @@
 package com.fifa.app.RestControllers;
 
+import com.fifa.app.DAO.MatchGoalDAO;
 import com.fifa.app.DTO.MatchDisplayDTO;
 import com.fifa.app.Entities.Match;
 import com.fifa.app.Services.MatchService;
@@ -19,6 +20,7 @@ import java.util.UUID;
 public class MatchController {
 
     private final MatchService matchService;
+    private final MatchGoalDAO matchGoalDAO;
 
     @PostMapping("/{seasonYear}")
     public ResponseEntity<?> generateMatches(@PathVariable int seasonYear) {
@@ -59,6 +61,20 @@ public class MatchController {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (RuntimeException e) {
             return ResponseEntity.status(404).body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/{id}/goals")
+    public ResponseEntity<?> addGoalsToMatch(
+        @PathVariable String id,
+        @RequestBody List<MatchGoalDAO.GoalRequest> goalRequests) {
+        try {
+            MatchDisplayDTO updatedMatch = matchGoalDAO.addGoalsToMatch(id, goalRequests);
+            return ResponseEntity.ok(updatedMatch);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error adding goals to match");
         }
     }
 }
