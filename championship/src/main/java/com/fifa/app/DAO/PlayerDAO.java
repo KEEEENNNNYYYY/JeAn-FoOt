@@ -19,35 +19,61 @@ public class PlayerDAO {
 
     private final DataSource dataSource;
 
-    public List<Player> findAll() {
+    public List<Player> findAll(PlayerCriteria criteria) {
         List<Player> playerList = new ArrayList<>();
-        String query = """
-            SELECT
-                p.id AS player_id,
-                p.name,
-                p.age,
-                p.number,
-                p.player_position,
-                p.nationality,
-                c.id AS club_id,
-                c.name AS club_name,
-                c.acronym,
-                c.year_creation,
-                c.stadium,
-                co.id AS coach_id,
-                co.name AS coach_name,
-                co.nationality AS coach_nationality
-            FROM players p
-            LEFT JOIN club_player cp ON p.id = cp.player_id
-            LEFT JOIN club c ON cp.club_id = c.id
-            LEFT JOIN coach co ON c.coach_id = co.id;
-        """;
+        StringBuilder queryBuilder = new StringBuilder("""
+        SELECT
+            p.id AS player_id,
+            p.name,
+            p.age,
+            p.number,
+            p.player_position,
+            p.nationality,
+            c.id AS club_id,
+            c.name AS club_name,
+            c.acronym,
+            c.year_creation,
+            c.stadium,
+            co.id AS coach_id,
+            co.name AS coach_name,
+            co.nationality AS coach_nationality
+        FROM players p
+        LEFT JOIN club_player cp ON p.id = cp.player_id
+        LEFT JOIN club c ON cp.club_id = c.id
+        LEFT JOIN coach co ON c.coach_id = co.id
+        WHERE 1=1
+    """);
+
+        List<Object> params = new ArrayList<>();
+
+        if (criteria.getName() != null && !criteria.getName().isEmpty()) {
+            queryBuilder.append(" AND p.name ILIKE ?");
+            params.add("%" + criteria.getName() + "%");
+        }
+        if (criteria.getAgeMinimum() != null) {
+            queryBuilder.append(" AND p.age >= ?");
+            params.add(criteria.getAgeMinimum());
+        }
+        if (criteria.getAgeMaximum() != null) {
+            queryBuilder.append(" AND p.age <= ?");
+            params.add(criteria.getAgeMaximum());
+        }
+        if (criteria.getClubName() != null && !criteria.getClubName().isEmpty()) {
+            queryBuilder.append(" AND c.name ILIKE ?");
+            params.add("%" + criteria.getClubName() + "%");
+        }
+
+        String query = queryBuilder.toString();
 
         try (
             Connection connection = dataSource.getConnection();
-            PreparedStatement statement = connection.prepareStatement(query);
-            ResultSet resultSet = statement.executeQuery()
+            PreparedStatement statement = connection.prepareStatement(query)
         ) {
+            for (int i = 0; i < params.size(); i++) {
+                statement.setObject(i + 1, params.get(i));
+            }
+
+            ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
                 Player player = mapFromResultSet(resultSet);
                 playerList.add(player);
@@ -58,6 +84,7 @@ public class PlayerDAO {
 
         return playerList;
     }
+
 
     public List<Player> createOrUpdatePlayers(List<Player> players) {
         List<Player> resultList = new ArrayList<>();
