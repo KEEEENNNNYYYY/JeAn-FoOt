@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.sql.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -132,6 +133,91 @@ public class MatchDAO {
         }
 
         return createdMatches;
+    }
+
+    public List<MatchDisplayDTO> findMatchesFiltered(int seasonYear, String matchStatus, String clubPlayingName,
+                                                     LocalDateTime matchAfter, LocalDateTime matchBeforeOrEquals) {
+        List<MatchDisplayDTO> matches = new ArrayList<>();
+
+        StringBuilder query = new StringBuilder("""
+        SELECT m.id as match_id, m.stadium, m.match_datetime, m.actual_status,
+               home.id as home_id, home.name as home_name, home.acronym as home_acronym,
+               away.id as away_id, away.name as away_name, away.acronym as away_acronym
+        FROM match m
+        JOIN club home ON m.club_playing_home_id = home.id
+        JOIN club away ON m.club_playing_away_id = away.id
+        WHERE m.season_year = ?
+    """);
+
+        List<Object> params = new ArrayList<>();
+        params.add(seasonYear);
+
+        if (matchStatus != null) {
+            query.append(" AND m.actual_status = ?::match_status");
+            params.add(matchStatus);
+        }
+
+        if (clubPlayingName != null) {
+            query.append(" AND (home.name ILIKE ? OR away.name ILIKE ?)");
+            params.add("%" + clubPlayingName + "%");
+            params.add("%" + clubPlayingName + "%");
+        }
+
+        if (matchAfter != null) {
+            query.append(" AND m.match_datetime > ?");
+            params.add(Timestamp.valueOf(matchAfter));
+        }
+
+        if (matchBeforeOrEquals != null) {
+            query.append(" AND m.match_datetime <= ?");
+            params.add(Timestamp.valueOf(matchBeforeOrEquals));
+        }
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query.toString())) {
+
+            for (int i = 0; i < params.size(); i++) {
+                stmt.setObject(i + 1, params.get(i));
+            }
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    String matchId = rs.getString("match_id");
+                    String stadium = rs.getString("stadium");
+                    LocalDate matchDate = rs.getTimestamp("match_datetime").toLocalDateTime().toLocalDate();
+                    MatchStatus status = MatchStatus.valueOf(rs.getString("actual_status"));
+
+                    ClubPlaying home = new ClubPlaying();
+                    home.setId(rs.getString("home_id"));
+                    home.setName(rs.getString("home_name"));
+                    home.setAcronym(rs.getString("home_acronym"));
+                    home.setScore(0); // à charger si tu stockes les scores
+                    home.setScorers(new ArrayList<>()); // à remplir depuis table scorer
+
+                    ClubPlaying away = new ClubPlaying();
+                    away.setId(rs.getString("away_id"));
+                    away.setName(rs.getString("away_name"));
+                    away.setAcronym(rs.getString("away_acronym"));
+                    away.setScore(0);
+                    away.setScorers(new ArrayList<>());
+
+                    MatchDisplayDTO dto = new MatchDisplayDTO();
+                    dto.setId(matchId);
+                    dto.setStadium(stadium);
+                    dto.setMatchDatetime(matchDate);
+                    dto.setActualStatus(status);
+                    dto.setClubPlayingHome(home);
+                    dto.setClubPlayingAway(away);
+
+                    matches.add(dto);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Erreur lors du filtrage des matchs", e);
+        }
+
+        return matches;
     }
 
 }
