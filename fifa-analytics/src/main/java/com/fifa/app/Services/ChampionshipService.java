@@ -21,38 +21,38 @@ public class ChampionshipService {
 
     private ClubService clubService;
 
-    public List<ChampionshipRank> getChampionshipRanks(Integer season, Integer limit) {
-        List<String> championships = Arrays.stream(Championship.values()).map(Enum::toString).toList();
-        return championships.stream()
-                .map(championship -> {
-                    List<Club> clubs = clubService
-                            .getClubStatistics(championship, season)
-                            .toStream()
-                            .toList();
-
-                    if (clubs.isEmpty()) {
-                        return new ChampionshipRank(championship, 0);
-                    }
-
-                    List<Integer> differences = clubs.stream()
-                            .map(Club::getDifferenceGoals)
-                            .filter(Objects::nonNull)
-                            .filter(diff -> diff >= 0) // Filtrer les valeurs négatives
-                            .sorted()
-                            .toList();
-
-                    if (differences.isEmpty()) {
-                        return new ChampionshipRank(championship, 0);
-                    }
-
-                    double median = median(differences);
-
-                    return new ChampionshipRank(championship, median);
-                })
-                .sorted(Comparator.comparingDouble(ChampionshipRank::getMedian))
-                .collect(Collectors.toList())
-                .reversed();
-    }
+//    public List<ChampionshipRank> getChampionshipRanks(Integer season, Integer limit) {
+//        List<String> championships = Arrays.stream(Championship.values()).map(Enum::toString).toList();
+//        return championships.stream()
+//                .map(championship -> {
+//                    List<Club> clubs = clubService
+//                            .getClubStatistics(championship, season)
+//                            .toStream()
+//                            .toList();
+//
+//                    if (clubs.isEmpty()) {
+//                        return new ChampionshipRank(championship, 0);
+//                    }
+//
+//                    List<Integer> differences = clubs.stream()
+//                            .map(Club::getDifferenceGoals)
+//                            .filter(Objects::nonNull)
+//                            .filter(diff -> diff >= 0)
+//                            .sorted()
+//                            .toList();
+//
+//                    if (differences.isEmpty()) {
+//                        return new ChampionshipRank(championship, 0);
+//                    }
+//
+//                    double median = median(differences);
+//
+//                    return new ChampionshipRank(championship, median);
+//                })
+//                .sorted(Comparator.comparingDouble(ChampionshipRank::getMedian))
+//                .collect(Collectors.toList())
+//                .reversed();
+//    }
 
     private double median(List<Integer> sortedValues) {
         int size = sortedValues.size();

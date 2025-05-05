@@ -23,9 +23,8 @@ public class SeasonService {
                 .uri("{championship}/seasons",championship)
                 .retrieve()
                 .onStatus(status -> status.value() == 404, response -> {
-                    // On log l'absence, mais on continue la symphonie
                     System.out.println("Aucun endpoint pour " + championship + " (404 ignoré).");
-                    return Mono.empty(); // <- retourne un Mono vide pour ne pas lever d'exception
+                    return Mono.empty();
                 })
                 .onStatus(HttpStatusCode::isError, response ->
                         response.bodyToMono(String.class)
@@ -33,7 +32,6 @@ public class SeasonService {
                 )
                 .bodyToFlux(Season.class)
                 .onErrorResume(e -> {
-                    // Si une exception survient malgré tout (ex: serveur down), on ignore aussi
                     System.out.println("Erreur lors de l'appel pour " + championship + " : " + e.getMessage());
                     return Flux.empty();
                 });

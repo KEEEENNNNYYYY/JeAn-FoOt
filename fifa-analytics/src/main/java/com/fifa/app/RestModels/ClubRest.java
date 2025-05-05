@@ -11,4 +11,11 @@ public class ClubRest {
     private Integer yearCreation;
     private String stadium;
     private Coach coach;
+    private Integer rankingPoints;
+    private Integer scoredGoals;
+    private Integer concededGoals;
+    private Integer differenceGoals;
+    private Integer cleanSheetNumber;
+    private String championshipName;
+    private Integer season;
 }

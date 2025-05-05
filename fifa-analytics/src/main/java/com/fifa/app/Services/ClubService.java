@@ -2,17 +2,23 @@ package com.fifa.app.Services;
 
 import com.fifa.app.Configuration.ChampionshipClient;
 import com.fifa.app.DAO.ClubDAO;
+import com.fifa.app.DAO.ClubStatDAO;
 import com.fifa.app.DAO.PlayerDAO;
 import com.fifa.app.DTO.Club;
+import com.fifa.app.DTO.ClubStat;
 import com.fifa.app.DTO.Player;
+import com.fifa.app.DTO.Season;
 import com.fifa.app.RestModels.ClubRest;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor
@@ -23,6 +29,7 @@ public class ClubService {
     private final ClubDAO clubDAO;
     private ChampionshipClient championshipClient;
     private PlayerDAO playerDAO;
+    private ClubStatDAO clubStatDAO;
 
     public Flux<ClubRest> getClubs(String championship) {
         return championshipClient.getWebClient()
@@ -32,27 +39,45 @@ public class ClubService {
                 .bodyToFlux(ClubRest.class);
     }
 
-    public Flux<Club> getClubStatistics(String championship,Integer season){
+    public Flux<ClubRest> getClubStatistics(String championship,Integer season){
         return championshipClient.getWebClient()
                 .get()
                 .uri("/{championship}/clubs/statistics/{season}",championship,season)
                 .retrieve()
-                .bodyToFlux(Club.class);
+                .bodyToFlux(ClubRest.class)
+                .doOnNext(clubRest -> {clubRest.setSeason(season);})
+                .doOnNext(clubRest -> clubRest.setChampionshipName(championship));
     }
 
-    public Flux<Club> saveAll(List<Club> clubs) {
-        return Flux.fromIterable(clubDAO.saveAll(clubs));
+    public Mono<List<Club>> saveAll(List<Club> clubs) {
+        return Mono.fromCallable(()->clubDAO.saveAll(clubs)).subscribeOn(Schedulers.boundedElastic());
     }
 
-    public List<Club> getBestClubs(Integer top) {
+    public List<Club> getBestClubs(Integer top, Integer seasonYear) {
         return clubDAO.getAll().stream()
+                .filter(club -> club.getClubStats() != null)
+                .map(club -> Map.entry(club, getStatForYear(club, seasonYear)))
+                .filter(entry -> entry.getValue() != null)
                 .sorted(
-                        Comparator.comparing(Club::getRankingPoints, Comparator.nullsLast(Comparator.reverseOrder()))
-                                .thenComparing(Club::getDifferenceGoals, Comparator.nullsLast(Comparator.reverseOrder()))
-                                .thenComparing(Club::getScoredGoals, Comparator.nullsLast(Comparator.reverseOrder()))
-                                .thenComparing(Club::getCleanSheetNumber, Comparator.nullsLast(Comparator.reverseOrder()))
+                        Comparator.comparing((Map.Entry<Club, ClubStat> e) -> e.getValue().getRankingPoints(), Comparator.nullsLast(Comparator.reverseOrder()))
+                                .thenComparing(e -> e.getValue().getDifferenceGoals(), Comparator.nullsLast(Comparator.reverseOrder()))
+                                .thenComparing(e -> e.getValue().getScoredGoals(), Comparator.nullsLast(Comparator.reverseOrder()))
+                                .thenComparing(e -> e.getValue().getCleanSheetNumber(), Comparator.nullsLast(Comparator.reverseOrder()))
                 )
                 .limit(top)
+                .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
     }
+
+    public Mono<List<ClubStat>> saveAllStats(List<ClubStat> clubs) {
+       return Mono.fromCallable(()->clubStatDAO.saveAll(clubs));
+    }
+
+    private ClubStat getStatForYear(Club club, Integer seasonYear) {
+        return club.getClubStats().stream()
+                .filter(stat -> stat.getSeason() != null && seasonYear.equals(stat.getSeason().getYear()))
+                .findFirst()
+                .orElse(null);
+    }
+
 }

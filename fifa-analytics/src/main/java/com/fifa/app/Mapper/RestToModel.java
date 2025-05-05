@@ -1,12 +1,19 @@
 package com.fifa.app.Mapper;
 
 import com.fifa.app.DTO.Club;
+import com.fifa.app.DTO.ClubStat;
 import com.fifa.app.DTO.Player;
+import com.fifa.app.DTO.PlayerStatistics;
+import com.fifa.app.Enum.Championship;
 import com.fifa.app.RestModels.ClubRest;
 import com.fifa.app.RestModels.PlayerRest;
+import com.fifa.app.RestModels.PlayerStatisticsRest;
+import org.springframework.stereotype.Component;
 
+import java.util.List;
+
+@Component
 public class RestToModel {
-
     public static Player mapToPlayer(PlayerRest rest){
         Player player = new Player();
         player.setId(rest.getId());
@@ -19,7 +26,7 @@ public class RestToModel {
         return player;
     }
 
-    public static Club apToClub(ClubRest clubRest){
+    public static Club mapToClub(ClubRest clubRest){
         Club club = new Club();
         club.setId(clubRest.getId());
         club.setName(clubRest.getName());
@@ -27,6 +34,46 @@ public class RestToModel {
         club.setStadium(clubRest.getStadium());
         club.setCoach(clubRest.getCoach());
         club.setAcronym(clubRest.getAcronym());
+        club.setCoach(clubRest.getCoach());
+        club.setChampionship(Championship.valueOf(clubRest.getChampionshipName()));
+        ClubStat clubStat = new ClubStat();
+        clubStat.setRankingPoints(clubRest.getRankingPoints());
+        clubStat.setDifferenceGoals(clubRest.getDifferenceGoals());
+        clubStat.setScoredGoals(clubRest.getScoredGoals());
+        clubStat.setConcededGoals(clubRest.getConcededGoals());
+        clubStat.setCleanSheetNumber(clubRest.getCleanSheetNumber());
+        clubStat.setClub(club);
+        club.setClubStats(List.of(clubStat));
+        club.setCoach(clubRest.getCoach());
         return club;
+    }
+
+    public static ClubRest mapToClubRest(Club club){
+        ClubRest clubRest = new ClubRest();
+        clubRest.setId(club.getId());
+        clubRest.setName(club.getName());
+        clubRest.setAcronym(club.getAcronym());
+        clubRest.setYearCreation(club.getYearCreation());
+        clubRest.setStadium(club.getStadium());
+        clubRest.setCoach(club.getCoach());
+        clubRest.setRankingPoints(club.getClubStats().getFirst().getRankingPoints());
+        clubRest.setScoredGoals(club.getClubStats().getFirst().getScoredGoals());
+        clubRest.setConcededGoals(club.getClubStats().getFirst().getConcededGoals());
+        clubRest.setDifferenceGoals(club.getClubStats().getFirst().getDifferenceGoals());
+        clubRest.setCleanSheetNumber(club.getClubStats().getFirst().getCleanSheetNumber());
+        clubRest.setChampionshipName(club.getChampionship().name());
+        return clubRest;
+    }
+
+
+    public static PlayerStatistics mapToPlayerStatistics(PlayerStatisticsRest playerStatisticsRest) {
+        PlayerStatistics playerStatistics = new PlayerStatistics();
+        Player player = new Player();
+        player.setId(playerStatisticsRest.getPlayerId());
+        playerStatistics.setPlayer(player);
+        playerStatistics.setScoredGoals(playerStatisticsRest.getScoredGoals());
+        playerStatistics.setPlayingTime(playerStatisticsRest.getPlayingTime());
+        playerStatistics.setSeason(playerStatisticsRest.getSeasonYear());
+        return playerStatistics;
     }
 }

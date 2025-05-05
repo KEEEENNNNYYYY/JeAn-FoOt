@@ -22,7 +22,7 @@ public class SeasonDAO {
             Statement stmt = con.createStatement();
             ResultSet resultSet = stmt.executeQuery(query);
             while (resultSet.next()) {
-                Season season = getSeasonFromResultSet(resultSet);
+                Season season = mapFromResultSet(resultSet);
                 seasons.add(season);
             }
         }catch (SQLException | RuntimeException e) {
@@ -32,11 +32,23 @@ public class SeasonDAO {
     }
 
     public Season getSeason(int year) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        String query = "SELECT id,year,alias,status FROM seasons WHERE year = ?";
+        try (Connection connection = dataConnection.getConnection()){
+            PreparedStatement stmt = connection.prepareStatement(query);
+            stmt.setInt(1, year);
+            ResultSet resultSet = stmt.executeQuery();
+            if(resultSet.next()) {
+                return mapFromResultSet(resultSet);
+            }
+        }catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return null;
     }
 
     public List<Season> saveAll(List<Season> seasons) {
-        String query =  "INSERT INTO seasons (id, year, alias, status) VALUES (?::UUID, ?, ? ,?)";
+        String query =  "INSERT INTO seasons (id, year, alias, status) VALUES (?::UUID, ?, ? ,?)" +
+                "ON CONFLICT DO NOTHING";
         List<Season> seasonList = new ArrayList<>();
         seasons.forEach(season -> {
             try(Connection connection = dataConnection.getConnection()) {
@@ -44,7 +56,8 @@ public class SeasonDAO {
                 stmt.setString(1, season.getId());
                 stmt.setInt(2, season.getYear());
                 stmt.setString(3, season.getAlias());
-                stmt.setObject(4, season.getStatus().name());
+                stmt.setObject(4, season.getStatus().name(),Types.OTHER);
+                stmt.executeUpdate();
             }catch (SQLException e){
                 throw new RuntimeException(e);
             }
@@ -52,12 +65,12 @@ public class SeasonDAO {
         return seasonList;
     }
 
-    private Season getSeasonFromResultSet(ResultSet rs) throws SQLException {
+    private Season mapFromResultSet(ResultSet rs) throws SQLException {
         Season season = new Season();
         season.setId(rs.getString("id"));
         season.setYear(rs.getInt("year"));
         season.setAlias(rs.getString("alias"));
-        season.setStatus(rs.getObject("status", Status.class));
+        season.setStatus(Status.valueOf(rs.getString("status")));
         return season;
     }
 }

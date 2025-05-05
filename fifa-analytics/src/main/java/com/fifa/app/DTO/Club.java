@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fifa.app.Enum.Championship;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class Club {
     private String id;
@@ -12,11 +14,6 @@ public class Club {
     private Integer yearCreation;
     private String stadium;
     private Coach coach;
-    private Integer rankingPoints;
-    private Integer scoredGoals;
-    private Integer concededGoals;
-    private Integer differenceGoals;
-    private Integer cleanSheetNumber;
-    @JsonIgnore
     private Championship championship;
+    private List<ClubStat> clubStats;
 }

@@ -2,71 +2,79 @@ package com.fifa.app.Services;
 
 import com.fifa.app.DTO.*;
 import com.fifa.app.Enum.Championship;
-import com.fifa.app.Enum.Position;
 import com.fifa.app.Mapper.RestToModel;
-import com.fifa.app.RestModels.ClubRest;
-import com.fifa.app.RestModels.PlayerRest;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.ExchangeStrategies;
-import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
-import reactor.util.function.Tuples;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @Service
 public class SynchronizationService {
 
-    private PlayerService playerService;
-    private PlayerStatisticsService playerStatisticsService;
-    private ClubService clubService;
-    private SeasonService seasonService;
+    private final PlayerService playerService;
+    private final PlayerStatisticsService playerStatisticsService;
+    private final ClubService clubService;
+    private final SeasonService seasonService;
 
     public Mono<Void> synchronize() {
         return Flux.fromArray(Championship.values())
-                .flatMapSequential(championship ->
-                        seasonService.getSeasons(championship.name())
-                                .collectList()
-                                .flatMapMany(seasons ->
-                                        // Collecte de tous les clubs (réactive)
-                                        Flux.fromIterable(seasons)
-                                                .flatMap(season ->
-                                                        clubService.getClubStatistics(championship.name(), season.getYear())
-                                                )
-                                                .collectList()
-                                                .flatMapMany(clubService::saveAll)
-                                                .thenMany(
-                                                        // Une fois les clubs enregistrés, on passe aux joueurs
-                                                        playerService.getPlayers(championship.name())
-                                                                .flatMap(playerRest -> {
-                                                                    Player player = RestToModel.mapToPlayer(playerRest);
-                                                                    return seasonService.getSeasons(championship.name())
-                                                                            .next()
-                                                                            .flatMap(season ->
-                                                                                    playerStatisticsService.getPlayerStatistics(
-                                                                                                    championship.name(),
-                                                                                                    player.getId(),
-                                                                                                    season.getYear()
-                                                                                            ).defaultIfEmpty(new PlayerStatistics())
-                                                                                            .map(stats -> {
-                                                                                                player.setPlayerStatistics(stats);
-                                                                                                return player;
-                                                                                            })
-                                                                            );
-                                                                })
-                                                )
-                                                .collectList()
-                                                .flatMap(players -> Mono.fromCallable(() -> playerService.saveAll(players))
-                                                        .subscribeOn(Schedulers.boundedElastic()))
-                                )
-                )
+                .flatMap(this::processChampionship)
                 .then();
     }
 
+    private Mono<Void> processChampionship(Championship championship) {
+        return seasonService.getSeasons(championship.name())
+                .collectList()
+                .flatMap(seasons -> seasonService.saveAll(seasons)
+                        .thenMany(Flux.fromIterable(seasons))
+                        .flatMap(season -> processSeason(championship, season))
+                        .then()
+                )
+                .then(processPlayers(championship));
+    }
+
+    private Mono<Void> processSeason(Championship championship, Season season) {
+        return clubService.getClubStatistics(championship.name(), season.getYear())
+                .map(RestToModel::mapToClub)
+                .collectList()
+                .flatMap(clubs -> clubService.saveAll(clubs)
+                        .thenMany(Flux.fromIterable(clubs))
+                        .flatMap(club -> processClubStats(club, season))
+                        .then());
+    }
+
+    private Mono<Void> processClubStats(Club club, Season season) {
+        if (club.getClubStats() == null || club.getClubStats().isEmpty()) {
+            return Mono.empty();
+        }
+
+        club.getClubStats().forEach(stat -> stat.setSeason(season));
+        return clubService.saveAllStats(club.getClubStats()).then();
+    }
+
+    private Mono<Void> processPlayers(Championship championship) {
+        return playerService.getPlayers(championship.name())
+                .map(RestToModel::mapToPlayer)
+                .collectList()
+                .flatMap(players -> playerService.saveAll(players)
+                        .thenMany(Flux.fromIterable(players))
+                        .flatMap(player -> processPlayerStatistics(championship, player))
+                        .then());
+    }
+
+    private Mono<Void> processPlayerStatistics(Championship championship, Player player) {
+        return seasonService.getSeasons(championship.name())
+                .next()
+                .flatMapMany(season -> playerStatisticsService.getPlayerStatistics(
+                        championship.name(),
+                        player.getId(),
+                        season.getYear()
+                ))
+                .collectList()
+                .flatMap(playerStatisticsService::saveAll)
+                .then();
+    }
 }
