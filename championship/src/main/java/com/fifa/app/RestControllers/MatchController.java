@@ -15,14 +15,14 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/matchMaker")
+@RequestMapping
 @RequiredArgsConstructor
 public class MatchController {
 
     private final MatchService matchService;
     private final MatchGoalDAO matchGoalDAO;
 
-    @PostMapping("/{seasonYear}")
+    @PostMapping("/matchMaker/{seasonYear}")
     public ResponseEntity<?> generateMatches(@PathVariable int seasonYear) {
         try {
             List<MatchDisplayDTO> matches = matchService.generateSeasonMatches(seasonYear);
@@ -34,7 +34,7 @@ public class MatchController {
         }
     }
 
-    @GetMapping("/{seasonYear}")
+    @GetMapping("/matches/{seasonYear}")
     public ResponseEntity<List<MatchDisplayDTO>> getMatchesBySeason(
         @PathVariable int seasonYear,
         @RequestParam(required = false) String matchStatus,
@@ -49,7 +49,7 @@ public class MatchController {
         return ResponseEntity.ok(matches);
     }
 
-    @PutMapping("/{matchId}/status")
+    @PutMapping("/matches/{matchId}/status")
     public ResponseEntity<?> updateMatchStatus(
         @PathVariable UUID matchId,
         @RequestParam String newStatus
@@ -64,7 +64,7 @@ public class MatchController {
         }
     }
 
-    @PostMapping("/{id}/goals")
+    @PostMapping("/matches/{id}/goals")
     public ResponseEntity<?> addGoalsToMatch(
         @PathVariable String id,
         @RequestBody List<MatchGoalDAO.GoalRequest> goalRequests) {
