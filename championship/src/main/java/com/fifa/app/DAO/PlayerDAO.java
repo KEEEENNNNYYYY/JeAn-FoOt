@@ -85,7 +85,6 @@ public class PlayerDAO {
         return playerList;
     }
 
-
     public List<Player> createOrUpdatePlayers(List<Player> players) {
         List<Player> resultList = new ArrayList<>();
 
