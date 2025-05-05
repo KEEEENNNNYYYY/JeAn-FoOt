@@ -1,6 +1,7 @@
 package com.fifa.app.DAO;
 
 import com.fifa.app.DTO.MatchDisplayDTO;
+import com.fifa.app.DTO.PlayerScorerDTO;
 import com.fifa.app.Entities.*;
 import com.fifa.app.dataSource.DataSource;
 import lombok.RequiredArgsConstructor;
@@ -141,12 +142,13 @@ public class MatchDAO {
 
         StringBuilder query = new StringBuilder("""
         SELECT m.id as match_id, m.stadium, m.match_datetime, m.actual_status,
-               home.id as home_id, home.name as home_name, home.acronym as home_acronym,
-               away.id as away_id, away.name as away_name, away.acronym as away_acronym
-        FROM match m
-        JOIN club home ON m.club_playing_home_id = home.id
-        JOIN club away ON m.club_playing_away_id = away.id
-        WHERE m.season_year = ?
+                                              m.home_score, m.away_score,
+                                              home.id as home_id, home.name as home_name, home.acronym as home_acronym,
+                                              away.id as away_id, away.name as away_name, away.acronym as away_acronym
+                                       FROM match m
+                                       JOIN club home ON m.club_playing_home_id = home.id
+                                       JOIN club away ON m.club_playing_away_id = away.id
+                                       WHERE m.season_year = ?
     """);
 
         List<Object> params = new ArrayList<>();
@@ -191,15 +193,21 @@ public class MatchDAO {
                     home.setId(rs.getString("home_id"));
                     home.setName(rs.getString("home_name"));
                     home.setAcronym(rs.getString("home_acronym"));
-                    home.setScore(0); // à charger si tu stockes les scores
-                    home.setScorers(new ArrayList<>()); // à remplir depuis table scorer
+                    int homeScore = rs.getInt("home_score");
+                    int awayScore = rs.getInt("away_score");
+                    home.setScore(homeScore);
+
+                    // à charger si tu stockes les scores
+                    home.setScorers(getScorersForClubInMatch(conn, matchId, home.getId()));
+
+                    // à remplir depuis table scorer
 
                     ClubPlaying away = new ClubPlaying();
                     away.setId(rs.getString("away_id"));
                     away.setName(rs.getString("away_name"));
                     away.setAcronym(rs.getString("away_acronym"));
-                    away.setScore(0);
-                    away.setScorers(new ArrayList<>());
+                    away.setScore(awayScore);
+                    away.setScorers(getScorersForClubInMatch(conn, matchId, away.getId()));
 
                     MatchDisplayDTO dto = new MatchDisplayDTO();
                     dto.setId(matchId);
@@ -219,6 +227,40 @@ public class MatchDAO {
 
         return matches;
     }
+
+    private List<Scorer> getScorersForClubInMatch(Connection conn, String matchId, String clubId) throws SQLException {
+        String query = """
+        SELECT g.minute_of_goal, g.own_goal,
+               p.id as player_id, p.name, p.age, p.number
+        FROM goal g
+        JOIN players p ON g.player_id = p.id
+        WHERE g.match_id = ?::uuid AND g.club_id = ?::uuid
+    """;
+
+        List<Scorer> scorers = new ArrayList<>();
+        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, matchId);
+            stmt.setString(2, clubId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    PlayerScorerDTO player = new PlayerScorerDTO();
+                    player.setId(rs.getString("player_id"));
+                    player.setName(rs.getString("name"));
+                    player.setNumber(rs.getInt("number"));
+
+                    Scorer scorer = new Scorer();
+                    scorer.setPlayer(player);
+                    scorer.setMinuteOfGoal(rs.getInt("minute_of_goal"));
+                    scorer.setOwnGoal(rs.getBoolean("own_goal"));
+
+                    scorers.add(scorer);
+                }
+            }
+        }
+
+        return scorers;
+    }
+
 
     public MatchDisplayDTO updateMatchStatus(UUID matchId, String newStatusStr) {
         MatchStatus newStatus = MatchStatus.valueOf(newStatusStr);
@@ -430,7 +472,7 @@ public class MatchDAO {
                         Scorer scorer = new Scorer();
 
                         // Création du joueur
-                        Player player = new Player();
+                        PlayerScorerDTO player = new PlayerScorerDTO();
                         player.setId(rs.getString("player_id"));
                         player.setName(rs.getString("player_name"));
                         player.setNumber(rs.getInt("player_number"));
@@ -462,19 +504,5 @@ public class MatchDAO {
         }
     }
 
-    /**
-     * logic , add goal :
-     * {
-     *     "clubId": "string",
-     *     "scorerIdentifier": "string",
-     *     "minuteOfGoal": 0
-     *   } WHERE scorerIdentifier === PlayerId
-     *  score always + 1
-     *
-     *  after the transaction , update match score ,
-     *  player stat, and club stat
-     *
-     *  own goal won't count , only updated within match stat
-     */
 
 }
