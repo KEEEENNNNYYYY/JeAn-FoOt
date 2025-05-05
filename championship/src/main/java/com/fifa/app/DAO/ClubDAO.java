@@ -288,10 +288,10 @@ public class ClubDAO {
         String query = """
         SELECT cs.rankingpoints, cs.scoredgoals, cs.concededgoals, cs.differencegoals, cs.cleansheetnumber,
                c.id as club_id, c.name as club_name, c.acronym, c.year_creation, c.stadium,
-               co.name as coach_name, co.nationality as coach_nationality
+               co.id AS coach_id, co.name as coach_name, co.nationality as coach_nationality
         FROM club_statistic cs
         JOIN club c ON cs.club_id = c.id
-        LEFT JOIN coach co ON c.coach_id = co.id
+        JOIN coach co ON c.coach_id = co.id
         WHERE cs.season_year = ?
         ORDER BY
             CASE WHEN ? THEN cs.rankingpoints END DESC,
@@ -313,16 +313,19 @@ public class ClubDAO {
 
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
+                    Coach coach = new Coach(
+                        rs.getString("coach_id"),
+                        rs.getString("coach_name"),
+                        Nationality.valueOf(rs.getString("coach_nationality"))
+                    );
+
                     Club club = new Club(
                         rs.getString("club_id"),
                         rs.getString("club_name"),
                         rs.getString("acronym"),
                         rs.getInt("year_creation"),
                         rs.getString("stadium"),
-                        new Coach(
-                            rs.getString("coach_name"),
-                            rs.getString("coach_nationality")
-                        )
+                        coach
                     );
 
                     ClubStatisticDTO stat = new ClubStatisticDTO(
