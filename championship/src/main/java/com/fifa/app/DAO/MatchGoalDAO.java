@@ -249,7 +249,7 @@ public class MatchGoalDAO {
             checkStmt.setInt(2, seasonYear);
             try (ResultSet rs = checkStmt.executeQuery()) {
                 if (rs.next()) {
-                    String updateQuery = "UPDATE club_statistic SET scored_goal = scored_goal + 1 WHERE club_id = ?::uuid AND season_year = ?";
+                    String updateQuery = "UPDATE club_statistic SET scoredgoals = scoredgoals + 1 WHERE club_id = ?::uuid AND season_year = ?";
                     try (PreparedStatement updateStmt = connection.prepareStatement(updateQuery)) {
                         updateStmt.setString(1, clubId);
                         updateStmt.setInt(2, seasonYear);
