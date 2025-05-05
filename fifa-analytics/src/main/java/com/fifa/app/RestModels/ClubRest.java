@@ -17,4 +17,5 @@ public class ClubRest {
     private Integer differenceGoals;
     private Integer cleanSheetNumber;
     private String championshipName;
+    private Integer season;
 }

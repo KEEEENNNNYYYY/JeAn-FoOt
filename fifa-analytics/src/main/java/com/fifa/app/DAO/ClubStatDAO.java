@@ -19,8 +19,8 @@ public class ClubStatDAO {
     public List<ClubStat> saveAll(List<ClubStat> clubStatList) {
         List<ClubStat> clubStats = new ArrayList<>();
         String query = "INSERT INTO club_statistics(club_id,season_year,ranking_points,scored_goals,difference_goals,clean_sheet_number)" +
-                "VALUES(?,?,?,?,?,?)" +
-                "ON CONFLICT (season_year) DO UPDATE SET " +
+                "VALUES(?::UUID,?,?,?,?,?)" +
+                "ON CONFLICT (season_year,club_id) DO UPDATE SET " +
                 "ranking_points = EXCLUDED.ranking_points," +
                 "scored_goals = EXCLUDED.scored_goals," +
                 "difference_goals = EXCLUDED.difference_goals," +

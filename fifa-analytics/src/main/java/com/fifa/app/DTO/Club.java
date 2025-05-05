@@ -14,7 +14,6 @@ public class Club {
     private Integer yearCreation;
     private String stadium;
     private Coach coach;
-    @JsonIgnore
     private Championship championship;
     private List<ClubStat> clubStats;
 }

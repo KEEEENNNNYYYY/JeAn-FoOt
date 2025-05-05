@@ -56,6 +56,7 @@ CREATE TABLE club_statistics(
   scored_goals int,
   difference_goals int,
   clean_sheet_number int,
+  PRIMARY KEY (season_year,club_id),
   CONSTRAINT pk_club_id FOREIGN KEY (club_id) REFERENCES clubs(id),
   CONSTRAINT pk_season_year FOREIGN KEY (season_year) REFERENCES seasons(year)
 );

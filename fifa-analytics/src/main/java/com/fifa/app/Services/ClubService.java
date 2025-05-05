@@ -2,6 +2,7 @@ package com.fifa.app.Services;
 
 import com.fifa.app.Configuration.ChampionshipClient;
 import com.fifa.app.DAO.ClubDAO;
+import com.fifa.app.DAO.ClubStatDAO;
 import com.fifa.app.DAO.PlayerDAO;
 import com.fifa.app.DTO.Club;
 import com.fifa.app.DTO.ClubStat;
@@ -12,6 +13,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.Comparator;
 import java.util.List;
@@ -26,6 +29,7 @@ public class ClubService {
     private final ClubDAO clubDAO;
     private ChampionshipClient championshipClient;
     private PlayerDAO playerDAO;
+    private ClubStatDAO clubStatDAO;
 
     public Flux<ClubRest> getClubs(String championship) {
         return championshipClient.getWebClient()
@@ -41,11 +45,12 @@ public class ClubService {
                 .uri("/{championship}/clubs/statistics/{season}",championship,season)
                 .retrieve()
                 .bodyToFlux(ClubRest.class)
+                .doOnNext(clubRest -> {clubRest.setSeason(season);})
                 .doOnNext(clubRest -> clubRest.setChampionshipName(championship));
     }
 
-    public Flux<Club> saveAll(List<Club> clubs) {
-        return Flux.fromIterable(clubDAO.saveAll(clubs));
+    public Mono<List<Club>> saveAll(List<Club> clubs) {
+        return Mono.fromCallable(()->clubDAO.saveAll(clubs)).subscribeOn(Schedulers.boundedElastic());
     }
 
     public List<Club> getBestClubs(Integer top, Integer seasonYear) {
@@ -62,6 +67,10 @@ public class ClubService {
                 .limit(top)
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
+    }
+
+    public Mono<List<ClubStat>> saveAllStats(List<ClubStat> clubs) {
+       return Mono.fromCallable(()->clubStatDAO.saveAll(clubs));
     }
 
     private ClubStat getStatForYear(Club club, Integer seasonYear) {
