@@ -1,5 +1,6 @@
 package com.fifa.app.Entities;
 
+import com.fifa.app.DTO.PlayerScorerDTO;
 import lombok.*;
 
 
@@ -8,7 +9,7 @@ import lombok.*;
 @Getter
 @Setter
 public class Scorer {
-    private Player player;
+    private PlayerScorerDTO player;
     private int minuteOfGoal;
     private boolean ownGoal;
 }
