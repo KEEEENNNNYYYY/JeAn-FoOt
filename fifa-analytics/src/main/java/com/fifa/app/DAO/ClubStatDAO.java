@@ -75,5 +75,4 @@ public class ClubStatDAO {
         return clubStat;
 
     }
-
 }

@@ -48,8 +48,8 @@ public class FifaController {
         return ResponseEntity.ok(clubService.getBestClubs(top,seasonYear));
     }
 
-//    @GetMapping("championshipRankings")
-//    public ResponseEntity<Object> championshipRanking(@RequestParam(defaultValue = "10") Integer top, @RequestParam(defaultValue = "2023") Integer season){
-//        return ResponseEntity.ok(championshipService.getChampionshipRanks(season,top));
-//    }
+    @GetMapping("championshipRankings")
+    public ResponseEntity<Object> championshipRanking(@RequestParam(defaultValue = "10") Integer top, @RequestParam(defaultValue = "2023") Integer season){
+        return ResponseEntity.ok(championshipService.getChampionshipRanks(season,top));
+    }
 }

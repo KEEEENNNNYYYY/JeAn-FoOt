@@ -39,6 +39,10 @@ public class ClubService {
                 .bodyToFlux(ClubRest.class);
     }
 
+    public Mono<List<Club>> getAllClubs() {
+        return Mono.fromCallable(clubDAO::getAll).subscribeOn(Schedulers.boundedElastic());
+    }
+
     public Flux<ClubRest> getClubStatistics(String championship,Integer season){
         return championshipClient.getWebClient()
                 .get()
@@ -56,13 +60,25 @@ public class ClubService {
     public List<Club> getBestClubs(Integer top, Integer seasonYear) {
         return clubDAO.getAll().stream()
                 .filter(club -> club.getClubStats() != null)
-                .map(club -> Map.entry(club, getStatForYear(club, seasonYear)))
-                .filter(entry -> entry.getValue() != null)
+                .map(club -> {
+                    ClubStat seasonStat = club.getClubStats().stream()
+                            .filter(stat -> stat.getSeason() != null && seasonYear.equals(stat.getSeason().getYear()))
+                            .findFirst()
+                            .orElse(null);
+                    assert seasonStat != null;
+                    club.setClubStats(List.of(seasonStat));
+                    return Map.entry(club, seasonStat);
+                })
+                .filter(entry -> entry.getValue() != null) // Exclure les clubs sans stats pour cette saison
                 .sorted(
-                        Comparator.comparing((Map.Entry<Club, ClubStat> e) -> e.getValue().getRankingPoints(), Comparator.nullsLast(Comparator.reverseOrder()))
-                                .thenComparing(e -> e.getValue().getDifferenceGoals(), Comparator.nullsLast(Comparator.reverseOrder()))
-                                .thenComparing(e -> e.getValue().getScoredGoals(), Comparator.nullsLast(Comparator.reverseOrder()))
-                                .thenComparing(e -> e.getValue().getCleanSheetNumber(), Comparator.nullsLast(Comparator.reverseOrder()))
+                        Comparator.comparing((Map.Entry<Club, ClubStat> e) -> e.getValue().getRankingPoints(),
+                                        Comparator.nullsLast(Comparator.reverseOrder()))
+                                .thenComparing(e -> e.getValue().getDifferenceGoals(),
+                                        Comparator.nullsLast(Comparator.reverseOrder()))
+                                .thenComparing(e -> e.getValue().getScoredGoals(),
+                                        Comparator.nullsLast(Comparator.reverseOrder()))
+                                .thenComparing(e -> e.getValue().getCleanSheetNumber(),
+                                        Comparator.nullsLast(Comparator.reverseOrder()))
                 )
                 .limit(top)
                 .map(Map.Entry::getKey)

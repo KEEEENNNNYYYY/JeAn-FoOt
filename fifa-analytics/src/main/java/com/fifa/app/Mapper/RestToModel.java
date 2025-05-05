@@ -65,7 +65,6 @@ public class RestToModel {
         return clubRest;
     }
 
-
     public static PlayerStatistics mapToPlayerStatistics(PlayerStatisticsRest playerStatisticsRest) {
         PlayerStatistics playerStatistics = new PlayerStatistics();
         Player player = new Player();

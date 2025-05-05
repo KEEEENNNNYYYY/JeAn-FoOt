@@ -7,6 +7,15 @@ DROP TABLE IF EXISTS players CASCADE ;
 DROP TYPE IF EXISTS seasons_status CASCADE ;
 DROP TABLE IF EXISTS player_statistics CASCADE;
 DROP TABLE IF EXISTS club_statistics;
+DROP TYPE IF EXISTS championship CASCADE;
+
+CREATE TYPE championship AS ENUM(
+        'Premier_League',
+        'La_LigA',
+        'Bundesliga',
+        'Seria_A',
+        'Ligue_1'
+);
 
 CREATE TYPE seasons_status AS ENUM(
     'STARTED','FINISHED','NOT_STARTED'
@@ -46,6 +55,7 @@ CREATE TABLE clubs(
   stadium varchar(150),
   year_creation int,
   coach_id  UUID,
+  championship championship,
   CONSTRAINT pk_coach_id FOREIGN KEY (coach_id) REFERENCES coach(id)
 );
 
