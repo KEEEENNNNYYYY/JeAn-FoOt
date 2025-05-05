@@ -3,6 +3,7 @@ package com.fifa.app.RestControllers;
 import com.fifa.app.DAO.MatchGoalDAO;
 import com.fifa.app.DTO.MatchDisplayDTO;
 import com.fifa.app.Entities.Match;
+import com.fifa.app.Entities.MatchStatusUpdateRequest;
 import com.fifa.app.Services.MatchService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -52,17 +53,20 @@ public class MatchController {
     @PutMapping("/matches/{matchId}/status")
     public ResponseEntity<?> updateMatchStatus(
         @PathVariable UUID matchId,
-        @RequestParam String newStatus
+        @RequestBody MatchStatusUpdateRequest request
     ) {
         try {
-            MatchDisplayDTO updatedMatch = matchService.updateMatchStatus(matchId, newStatus);
+            MatchDisplayDTO updatedMatch = matchService.updateMatchStatus(matchId, request.getStatus());
             return ResponseEntity.ok(updatedMatch);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (RuntimeException e) {
             return ResponseEntity.status(404).body(e.getMessage());
         }
     }
+
 
     @PostMapping("/matches/{id}/goals")
     public ResponseEntity<?> addGoalsToMatch(
