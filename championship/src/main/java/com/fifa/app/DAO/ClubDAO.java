@@ -60,8 +60,7 @@ public class ClubDAO {
         coach.setId(rs.getObject("coach_id").toString());
         coach.setName(rs.getString("coach_name"));
         coach.setNationality(Nationality.valueOf(rs.getString("coach_nationality") != null
-            ? rs.getString("coach_nationality") : "UNKNOWN")); // Valeur par défaut si aucune nationalité
-
+            ? rs.getString("coach_nationality") : "UNKNOWN"));
         club.setCoach(coach);
 
         return club;
@@ -129,14 +128,14 @@ public class ClubDAO {
     """;
 
         try (Connection connection = dataSource.getConnection()) {
-            connection.setAutoCommit(false); // Démarrer une transaction
+            connection.setAutoCommit(false);
 
             try (
                 PreparedStatement deleteStmt = connection.prepareStatement(deleteQuery);
                 PreparedStatement insertStmt = connection.prepareStatement(insertClubPlayerQuery);
                 PreparedStatement deleteOldClubStmt = connection.prepareStatement(deletePlayerFromOldClubQuery);
             ) {
-                // 1. Supprimer tous les joueurs du club (pour les joueurs dans le club actuel)
+                // 1. Supprimer tous les joueurs du club
                 deleteStmt.setObject(1, clubId);
                 deleteStmt.executeUpdate();
 
@@ -157,7 +156,7 @@ public class ClubDAO {
                             }
 
                             // Ensuite, on ajoute le joueur au nouveau club
-                            insertStmt.setObject(1, UUID.randomUUID()); // Générer un nouvel ID pour la relation
+                            insertStmt.setObject(1, UUID.randomUUID());
                             insertStmt.setObject(2, clubId);
                             insertStmt.setObject(3, UUID.fromString(player.getId()));
                             insertStmt.executeUpdate();
@@ -165,9 +164,9 @@ public class ClubDAO {
                     }
                 }
 
-                connection.commit(); // Confirmer la transaction
+                connection.commit();
             } catch (SQLException e) {
-                connection.rollback(); // Annuler si une erreur survient
+                connection.rollback();
                 throw new RuntimeException("Erreur lors de la mise à jour des joueurs du club", e);
             }
 
@@ -241,7 +240,7 @@ public class ClubDAO {
                 }
 
                 connection.commit();
-                return findPlayersByClubId(clubId); // Retourne tous les joueurs du club
+                return findPlayersByClubId(clubId);
             } catch (SQLException e) {
                 connection.rollback();
                 throw new RuntimeException("Erreur lors de l'ajout des joueurs au club", e);

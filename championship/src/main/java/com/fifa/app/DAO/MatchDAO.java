@@ -21,7 +21,7 @@ public class MatchDAO {
     public List<MatchDisplayDTO> createMatchesForSeason(int seasonYear) {
         List<MatchDisplayDTO> createdMatches = new ArrayList<>();
 
-        // Requêtes SQL
+
         String seasonQuery = "SELECT * FROM season WHERE year = ?";
         String checkMatchQuery = "SELECT COUNT(*) FROM match WHERE season_year = ?";
         String clubQuery = "SELECT * FROM club";
@@ -31,7 +31,7 @@ public class MatchDAO {
     """;
 
         try (Connection connection = dataSource.getConnection()) {
-            // Vérifie saison
+
             Season season = null;
             try (PreparedStatement stmt = connection.prepareStatement(seasonQuery)) {
                 stmt.setInt(1, seasonYear);
@@ -53,7 +53,7 @@ public class MatchDAO {
                 throw new IllegalArgumentException("La saison doit être STARTED.");
             }
 
-            // Vérifie matchs existants
+
             try (PreparedStatement stmt = connection.prepareStatement(checkMatchQuery)) {
                 stmt.setInt(1, seasonYear);
                 try (ResultSet rs = stmt.executeQuery()) {
@@ -63,7 +63,7 @@ public class MatchDAO {
                 }
             }
 
-            // Clubs
+
             List<Club> clubs = new ArrayList<>();
             try (PreparedStatement stmt = connection.prepareStatement(clubQuery);
                  ResultSet rs = stmt.executeQuery()) {
@@ -77,7 +77,7 @@ public class MatchDAO {
                 }
             }
 
-            // Génération des matchs
+
             try (PreparedStatement stmt = connection.prepareStatement(insertMatchQuery)) {
                 for (int i = 0; i < clubs.size(); i++) {
                     for (int j = 0; j < clubs.size(); j++) {
@@ -98,7 +98,7 @@ public class MatchDAO {
                             stmt.setInt(7, seasonYear);
                             stmt.executeUpdate();
 
-                            // Création des ClubPlaying
+
                             ClubPlaying homeClub = new ClubPlaying();
                             homeClub.setId(home.getId());
                             homeClub.setName(home.getName());
@@ -113,13 +113,13 @@ public class MatchDAO {
                             awayClub.setScore(0);
                             awayClub.setScorers(new ArrayList<>());
 
-                            // DTO final
+
                             MatchDisplayDTO matchDto = new MatchDisplayDTO();
                             matchDto.setId(matchId);
                             matchDto.setClubPlayingHome(homeClub);
                             matchDto.setClubPlayingAway(awayClub);
                             matchDto.setStadium(stadium);
-                            matchDto.setMatchDatetime(matchTime.toLocalDate()); // ISO 8601
+                            matchDto.setMatchDatetime(matchTime.toLocalDate());
                             matchDto.setActualStatus(MatchStatus.NOT_STARTED);
 
                             createdMatches.add(matchDto);
@@ -197,10 +197,7 @@ public class MatchDAO {
                     int awayScore = rs.getInt("away_score");
                     home.setScore(homeScore);
 
-                    // à charger si tu stockes les scores
                     home.setScorers(getScorersForClubInMatch(conn, matchId, home.getId()));
-
-                    // à remplir depuis table scorer
 
                     ClubPlaying away = new ClubPlaying();
                     away.setId(rs.getString("away_id"));
@@ -261,7 +258,6 @@ public class MatchDAO {
         return scorers;
     }
 
-
     public MatchDisplayDTO updateMatchStatus(UUID matchId, String newStatusStr) {
         MatchStatus newStatus = MatchStatus.valueOf(newStatusStr);
         MatchDisplayDTO updatedMatch = null;
@@ -290,12 +286,12 @@ public class MatchDAO {
                 int homeScore = rs.getInt("home_score");
                 int awayScore = rs.getInt("away_score");
 
-                // Vérifier l'ordre des statuts
+
                 if (!isValidStatusTransition(currentStatus, newStatus)) {
                     throw new IllegalStateException("Invalid status transition");
                 }
 
-                // Met à jour le statut
+
                 String updateStatusSql = "UPDATE match SET actual_status = ?::match_status WHERE id = ?";
                 try (PreparedStatement updateStmt = conn.prepareStatement(updateStatusSql)) {
                     updateStmt.setString(1, newStatus.name());
@@ -303,12 +299,12 @@ public class MatchDAO {
                     updateStmt.executeUpdate();
                 }
 
-                // Si le match est terminé, mettre à jour les statistiques des clubs
+
                 if (newStatus == MatchStatus.FINISHED) {
                     updateClubStatistics(conn, homeId, awayId, homeScore, awayScore);
                 }
 
-                // Créer DTO à retourner
+
                 updatedMatch = new MatchDisplayDTO();
                 updatedMatch.setId(matchId.toString());
                 updatedMatch.setStadium(rs.getString("stadium"));
@@ -327,7 +323,7 @@ public class MatchDAO {
                 away.setName(rs.getString("away_name"));
                 away.setScore(awayScore);
 
-                home.setScorers(new ArrayList<>()); // À charger depuis table goal si besoin
+                home.setScorers(new ArrayList<>());
                 away.setScorers(new ArrayList<>());
 
                 updatedMatch.setClubPlayingHome(home);
@@ -358,7 +354,7 @@ public class MatchDAO {
             awayPoints = 1;
         }
 
-        // Update home club stats
+
         String updateStatsSql = """
         UPDATE club_statistic
         SET rankingPoints = COALESCE(rankingPoints,0) + ?,
@@ -429,7 +425,7 @@ public class MatchDAO {
     """;
 
         try (Connection conn = dataSource.getConnection()) {
-            // Récupérer les informations de base du match
+
             MatchDisplayDTO matchDto;
             try (PreparedStatement stmt = conn.prepareStatement(query)) {
                 stmt.setObject(1, matchId);
@@ -438,7 +434,6 @@ public class MatchDAO {
                         throw new IllegalArgumentException("Match not found");
                     }
 
-                    // Création des clubs
                     ClubPlaying homeClub = new ClubPlaying();
                     homeClub.setId(rs.getString("home_id"));
                     homeClub.setName(rs.getString("home_name"));
@@ -453,7 +448,7 @@ public class MatchDAO {
                     awayClub.setScore(rs.getInt("away_score"));
                     awayClub.setScorers(new ArrayList<>());
 
-                    // Création du DTO
+
                     matchDto = new MatchDisplayDTO();
                     matchDto.setId(rs.getString("match_id"));
                     matchDto.setStadium(rs.getString("stadium"));
@@ -464,7 +459,7 @@ public class MatchDAO {
                 }
             }
 
-            // Récupérer les buteurs
+
             try (PreparedStatement stmt = conn.prepareStatement(scorersQuery)) {
                 stmt.setObject(1, matchId);
                 try (ResultSet rs = stmt.executeQuery()) {

@@ -2,6 +2,8 @@ package com.fifa.app.DAO;
 
 import com.fifa.app.Entities.Season;
 import com.fifa.app.Entities.SeasonStatus;
+import com.fifa.app.Entities.SeasonStatusUpdateRequest;
+import com.fifa.app.Mapper.SeasonMapper;
 import com.fifa.app.dataSource.DataSource;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -30,7 +32,7 @@ public class SeasonDAO {
             ResultSet resultSet = statement.executeQuery()
         ) {
             while (resultSet.next()) {
-                Season season = mapFromResultSet(resultSet);
+                Season season = SeasonMapper.mapFromResultSet(resultSet);
                 seasonList.add(season);
             }
         } catch (SQLException e) {
@@ -44,15 +46,15 @@ public class SeasonDAO {
         List<Season> createdSeasons = new ArrayList<>();
 
         String insertQuery = """
-        INSERT INTO season (id, alias, status, year)
-        VALUES (?::uuid, ?, ?::season_status, ?)
-    """;
+            INSERT INTO season (id, alias, status, year)
+            VALUES (?::uuid, ?, ?::season_status, ?)
+        """;
 
         try (Connection connection = dataSource.getConnection()) {
             for (Season season : seasons) {
                 String generatedId = UUID.randomUUID().toString();
                 String alias = season.getAlias();
-                int year = season.getYear(); // car year est une string dans l'entité
+                int year = season.getYear();
                 SeasonStatus status = SeasonStatus.NOT_STARTED;
 
                 try (PreparedStatement stmt = connection.prepareStatement(insertQuery)) {
@@ -63,7 +65,7 @@ public class SeasonDAO {
                     stmt.executeUpdate();
                 }
 
-                createdSeasons.add(new Season(generatedId,year, alias, status));
+                createdSeasons.add(new Season(generatedId, year, alias, status));
             }
         } catch (SQLException e) {
             throw new RuntimeException("Erreur lors de la création des saisons", e);
@@ -77,57 +79,35 @@ public class SeasonDAO {
         String updateQuery = "UPDATE season SET status = ?::season_status WHERE id = ?::uuid";
 
         try (Connection connection = dataSource.getConnection()) {
-            // Étape 1 : récupérer la saison correspondante
-            Season existingSeason = null;
+            Season existingSeason;
 
             try (PreparedStatement selectStmt = connection.prepareStatement(selectQuery)) {
                 selectStmt.setInt(1, seasonYear);
                 try (ResultSet rs = selectStmt.executeQuery()) {
                     if (rs.next()) {
-                        existingSeason = mapFromResultSet(rs);
+                        existingSeason = SeasonMapper.mapFromResultSet(rs);
                     } else {
                         throw new RuntimeException("Saison non trouvée pour l’année " + seasonYear);
                     }
                 }
             }
 
-            // Étape 2 : vérifier la validité de la transition de statut
-            if (!isValidStatusTransition(existingSeason.getStatus(), newStatus)) {
+            if (!SeasonMapper.isValidStatusTransition(existingSeason.getStatus(), newStatus)) {
                 throw new IllegalArgumentException("Changement de statut invalide : " +
                     existingSeason.getStatus() + " → " + newStatus);
             }
 
-            // Étape 3 : mise à jour du statut
             try (PreparedStatement updateStmt = connection.prepareStatement(updateQuery)) {
                 updateStmt.setString(1, newStatus.name());
                 updateStmt.setObject(2, existingSeason.getId());
                 updateStmt.executeUpdate();
             }
 
-            // Retourner la saison mise à jour
             existingSeason.setStatus(newStatus);
             return existingSeason;
 
         } catch (SQLException e) {
             throw new RuntimeException("Erreur lors de la mise à jour du statut de la saison", e);
         }
-    }
-
-    private boolean isValidStatusTransition(SeasonStatus current, SeasonStatus next) {
-        return switch (current) {
-            case NOT_STARTED -> next == SeasonStatus.STARTED;
-            case STARTED -> next == SeasonStatus.FINISHED;
-            case FINISHED -> false;
-        };
-    }
-
-
-    private Season mapFromResultSet(ResultSet rs) throws SQLException {
-        return new Season(
-            rs.getObject("id").toString(),
-            rs.getInt("year"), // stocké en int, converti en String
-            rs.getString("alias"),
-            SeasonStatus.valueOf(rs.getString("status"))
-        );
     }
 }

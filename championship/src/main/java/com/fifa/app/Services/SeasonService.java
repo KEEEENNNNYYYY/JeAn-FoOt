@@ -4,6 +4,7 @@ package com.fifa.app.Services;
 import com.fifa.app.DAO.SeasonDAO;
 import com.fifa.app.Entities.Season;
 import com.fifa.app.Entities.SeasonStatus;
+import com.fifa.app.Entities.SeasonStatusUpdateRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

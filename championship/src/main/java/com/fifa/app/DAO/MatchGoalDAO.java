@@ -28,7 +28,7 @@ public class MatchGoalDAO {
             connection.setAutoCommit(false);
 
             try {
-                // 1. Check match status
+
                 String statusCheckQuery = "SELECT actual_status FROM match WHERE id = ?::uuid";
                 MatchStatus matchStatus;
 
@@ -46,7 +46,7 @@ public class MatchGoalDAO {
                     throw new IllegalArgumentException("Cannot add goals to a match that is not STARTED");
                 }
 
-                // 2. Process each goal request
+
                 for (GoalRequest goalRequest : goalRequests) {
                     verifyPlayerClub(connection, goalRequest.getScorerIdentifier(), goalRequest.getClubId());
                     insertGoal(connection, matchId, goalRequest);
@@ -190,7 +190,7 @@ public class MatchGoalDAO {
         String currentClubId = goalRequest.getClubId();
         String opposingClubId = getOpposingClubId(connection, currentClubId, matchId);
 
-        // ✅ 1. Récupération du season_year du match
+        // Récupération du season_year du match
         int seasonYear;
         String seasonQuery = "SELECT season_year FROM match WHERE id = ?::uuid";
         try (PreparedStatement stmt = connection.prepareStatement(seasonQuery)) {
@@ -204,10 +204,10 @@ public class MatchGoalDAO {
             }
         }
 
-        // ✅ 2. Mise à jour du club ayant marqué
+        // Mise à jour du club ayant marqué
         updateClubScoredGoals(connection, currentClubId, seasonYear);
 
-        // ✅ 3. Mise à jour du club adverse (buts encaissés)
+        // Mise à jour du club adverse (buts encaissés)
         updateClubConcededGoals(connection, opposingClubId, seasonYear);
     }
 
@@ -289,45 +289,6 @@ public class MatchGoalDAO {
                     }
                 }
             }
-        }
-    }
-
-    public static class GoalRequest {
-        private String clubId;
-        private String scorerIdentifier;
-        private int minuteOfGoal;
-        private boolean ownGoal;
-
-        public String getClubId() {
-            return clubId;
-        }
-
-        public void setClubId(String clubId) {
-            this.clubId = clubId;
-        }
-
-        public String getScorerIdentifier() {
-            return scorerIdentifier;
-        }
-
-        public void setScorerIdentifier(String scorerIdentifier) {
-            this.scorerIdentifier = scorerIdentifier;
-        }
-
-        public int getMinuteOfGoal() {
-            return minuteOfGoal;
-        }
-
-        public void setMinuteOfGoal(int minuteOfGoal) {
-            this.minuteOfGoal = minuteOfGoal;
-        }
-
-        public boolean isOwnGoal() {
-            return ownGoal;
-        }
-
-        public void setOwnGoal(boolean ownGoal) {
-            this.ownGoal = ownGoal;
         }
     }
 }
