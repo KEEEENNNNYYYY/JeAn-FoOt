@@ -3,6 +3,7 @@ package com.fifa.app.DAO;
 import com.fifa.app.DTO.PlayerStatisticDTO;
 import com.fifa.app.Entities.DurationUnit;
 import com.fifa.app.Entities.PlayingTime;
+import com.fifa.app.Mapper.PlayerStatisticMapper;
 import com.fifa.app.dataSource.DataSource;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -27,6 +28,8 @@ public class PlayerStatisticDAO {
             WHERE ps.player_id = ?::uuid AND s.year = ?
         """;
 
+        PlayerStatisticDTO playerStatistic = null;
+
         try (
             Connection connection = dataSource.getConnection();
             PreparedStatement statement = connection.prepareStatement(query)
@@ -36,24 +39,13 @@ public class PlayerStatisticDAO {
 
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
-                    int scoredGoals = rs.getInt("scored_goal");
-                    long playingTimeInSeconds = rs.getLong("playing_time");
-
-                    PlayingTime playingTime = new PlayingTime(
-                        playingTimeInSeconds,
-                        DurationUnit.SECONDS
-                    );
-
-
-
-                    return new PlayerStatisticDTO(scoredGoals, playingTime);
-                } else {
-                    return null; // Aucun résultat trouvé
+                    playerStatistic = PlayerStatisticMapper.mapFromResultSet(rs);
                 }
             }
 
         } catch (SQLException e) {
             throw new RuntimeException("Erreur lors de la récupération des statistiques", e);
         }
+        return playerStatistic;
     }
 }
