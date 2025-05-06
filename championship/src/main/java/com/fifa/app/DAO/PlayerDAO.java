@@ -13,6 +13,9 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.fifa.app.Mapper.PlayerMapper.mapPlayerDtoFromResultSet;
+import static com.fifa.app.Mapper.PlayerMapper.mapPlayerFromResultSet;
+
 @Repository
 @AllArgsConstructor
 public class PlayerDAO {
@@ -75,9 +78,10 @@ public class PlayerDAO {
 
             ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
-                Player player = mapFromResultSet(resultSet);
+                Player player = mapPlayerFromResultSet(resultSet);
                 playerList.add(player);
             }
+
         } catch (SQLException e) {
             throw new RuntimeException("Erreur lors de la récupération des joueurs", e);
         }
@@ -120,42 +124,6 @@ public class PlayerDAO {
         return resultList;
     }
 
-    private Player mapFromResultSet(ResultSet rs) throws SQLException {
-        Player player = new Player();
-        player.setId(rs.getObject("player_id").toString());
-        player.setName(rs.getString("name"));
-        player.setNumber(rs.getInt("number"));
-        player.setPosition(Position.valueOf(rs.getString("player_position")));
-        player.setNationality(Nationality.valueOf(rs.getString("nationality")));
-        player.setAge(rs.getInt("age"));
-
-        // Mapping du club et du coach
-        String clubId = rs.getString("club_id");
-        if (clubId != null) {
-            Club club = new Club();
-            club.setId(clubId);
-            club.setName(rs.getString("club_name"));
-            club.setAcronym(rs.getString("acronym"));
-            club.setYearCreation(rs.getInt("year_creation"));
-            club.setStadium(rs.getString("stadium"));
-
-            String coachId = rs.getString("coach_id");
-            if (coachId != null) {
-                Coach coach = new Coach();
-                coach.setId(coachId);
-                coach.setName(rs.getString("coach_name"));
-                coach.setNationality(Nationality.valueOf(rs.getString("coach_nationality")));
-                club.setCoach(coach);
-            }
-
-            player.setClub(club);
-        } else {
-            player.setClub(null);
-        }
-
-        return player;
-    }
-
     public List<PlayerDTO> findPlayersByClubId(String clubId) {
         List<PlayerDTO> players = new ArrayList<>();
 
@@ -173,16 +141,10 @@ public class PlayerDAO {
             stmt.setObject(1, clubId);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    PlayerDTO player = new PlayerDTO();
-                    player.setId(rs.getObject("player_id").toString());
-                    player.setName(rs.getString("name"));
-                    player.setNumber(rs.getInt("number"));
-                    player.setPosition(Position.valueOf(rs.getString("player_position")));
-                    player.setNationality(Nationality.valueOf(rs.getString("nationality")));
-                    player.setAge(rs.getInt("age"));
-
+                    PlayerDTO player = mapPlayerDtoFromResultSet(rs);
                     players.add(player);
                 }
+
             }
         } catch (SQLException e) {
             throw new RuntimeException("Erreur lors de la récupération des joueurs du club", e);
