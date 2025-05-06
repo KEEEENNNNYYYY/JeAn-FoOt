@@ -65,7 +65,7 @@ public class PlayerStatisticsDAO {
     public PlayerStatistics mapFromResultSet(ResultSet resultSet) throws SQLException {
         Season season = seasonDAO.getSeason(resultSet.getInt("season_year"));
         PlayingTime playingTime = new PlayingTime();
-        playingTime.setValue(resultSet.getInt("playing_time"));
+        playingTime.setValue(resultSet.getDouble("playing_time"));
         playingTime.setDurationUnit(DurationUnit.valueOf(resultSet.getString("playing_time_unit")));
         PlayerStatistics playerStatistics = new PlayerStatistics();
         playerStatistics.setScoredGoals(resultSet.getInt("scored_goals"));

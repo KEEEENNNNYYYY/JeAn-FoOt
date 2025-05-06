@@ -14,6 +14,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.text.DecimalFormat;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -57,15 +58,25 @@ public class PlayerService {
                     PlayerStatistics stats = player.getPlayerStatistics()
                             .stream()
                             .filter(stat -> stat.getSeason() != null && seasonYear.equals(stat.getSeason()))
+                            .peek(playerStatistics -> {
+                                DecimalFormat df = new DecimalFormat();
+                                playerStatistics.getPlayingTime().setDurationUnit(playingTimeUnit);
+                                Double time = playerStatistics.getPlayingTime().getValue();
+                                if(playingTimeUnit == DurationUnit.MINUTE){
+                                    time =  time / 60;
+                                }
+                                if(playingTimeUnit == DurationUnit.HOUR){
+                                    time =  time / 3600;
+                                }
+                                playerStatistics.getPlayingTime().setValue(Double.valueOf(df.format(time)));
+                            })
                             .findFirst()
                             .orElse(null);
-                    System.out.println("Map: " + stats);
                     return Map.entry(player, stats);
                 })
-                .filter(entry -> entry.getValue() != null && entry.getValue().getPlayingTime().getDurationUnit() == playingTimeUnit)
                 .sorted(
-                        Comparator.comparingInt((Map.Entry<Player, PlayerStatistics> e) -> e.getValue().getScoredGoals()).reversed()
-                                .thenComparingInt(e -> e.getValue().getPlayingTime().getValue())
+                        Comparator.comparingDouble((Map.Entry<Player, PlayerStatistics> e) -> e.getValue().getScoredGoals()).reversed()
+                                .thenComparingDouble(e -> e.getValue().getPlayingTime().getValue())
                 )
                 .limit(top)
                 .map(Map.Entry::getKey)

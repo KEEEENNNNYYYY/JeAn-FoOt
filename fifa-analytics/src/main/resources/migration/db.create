@@ -85,7 +85,7 @@ CREATE TABLE players(
 CREATE TABLE player_statistics(
   player_id UUID,
   scored_goals int,
-  playing_time int,
+  playing_time float,
   season_year int,
   playing_time_unit playing_time_unit,
   PRIMARY KEY(player_id,season_year),
