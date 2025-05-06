@@ -5,6 +5,6 @@ import lombok.Data;
 
 @Data
 public class PlayingTime {
-    private Integer value;
+    private Double value;
     private DurationUnit durationUnit;
 }
