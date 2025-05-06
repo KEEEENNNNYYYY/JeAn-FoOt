@@ -13,7 +13,9 @@ public class Club {
     private String acronym;
     private Integer yearCreation;
     private String stadium;
+    @JsonIgnore
     private Coach coach;
+    @JsonIgnore
     private Championship championship;
     private List<ClubStat> clubStats;
 }

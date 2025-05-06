@@ -5,6 +5,7 @@ import com.fifa.app.DAO.PlayerDAO;
 import com.fifa.app.DTO.Player;
 import com.fifa.app.DTO.PlayerStatistics;
 import com.fifa.app.Enum.DurationUnit;
+import com.fifa.app.Enum.Position;
 import com.fifa.app.RestModels.PlayerRest;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatusCode;
@@ -47,7 +48,11 @@ public class PlayerService {
 
     public List<Player> getBestPlayers(Integer top, DurationUnit playingTimeUnit, Integer seasonYear) {
         return playerDAO.getAllPlayers().stream()
-                .filter(player -> player.getPlayerStatistics() != null && !player.getPlayerStatistics().isEmpty())
+                .filter(player ->
+                        player.getPlayerStatistics() != null &&
+                                !player.getPlayerStatistics().isEmpty() &&
+                            player.getPosition() != Position.GOAL_KEEPER
+                        )
                 .map(player -> {
                     PlayerStatistics stats = player.getPlayerStatistics()
                             .stream()
