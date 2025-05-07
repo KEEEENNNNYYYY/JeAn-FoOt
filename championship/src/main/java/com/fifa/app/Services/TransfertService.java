@@ -1,10 +1,7 @@
 package com.fifa.app.Services;
 
-
-import com.fifa.app.DAO.SeasonDAO;
 import com.fifa.app.DAO.TransfertDAO;
-import com.fifa.app.Entities.Season;
-import com.fifa.app.Entities.Transfert;
+import com.fifa.app.DTO.TransfertDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,9 +13,7 @@ public class TransfertService {
 
     private final TransfertDAO transfertDAO;
 
-    public List<Transfert> getAll() {
+    public List<TransfertDTO> getAll() {
         return transfertDAO.getAll();
     }
-
-
 }
