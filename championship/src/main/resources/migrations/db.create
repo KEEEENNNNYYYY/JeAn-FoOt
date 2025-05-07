@@ -128,5 +128,8 @@ CREATE TABLE goal (
     FOREIGN KEY (club_id) REFERENCES club(id)
 );
 
-
-
+create table transfert(
+id uuid primary key,
+ player_id uuid,
+ transfert_date date
+ );
