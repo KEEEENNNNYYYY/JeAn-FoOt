@@ -131,5 +131,6 @@ CREATE TABLE goal (
 create table transfert(
 id uuid primary key,
  player_id uuid,
- transfert_date date
+ transfert_date date,
+ transfertType varchar
  );
