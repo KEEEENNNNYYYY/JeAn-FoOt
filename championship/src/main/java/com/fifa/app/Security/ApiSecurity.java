@@ -1,4 +1,4 @@
-package com.fifa.analytics.Security;
+package com.fifa.app.Security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -14,8 +14,8 @@ import java.util.Set;
 public class ApiSecurity extends OncePerRequestFilter {
 
     private static final Set<String> VALID_API_KEYS = Set.of(
-            "fifa-central-api-key-0001",
-            "user-fifa-api-key-abc456"
+            "fifa-central-api-key-0000",
+            "user-fifa-api-key-abc123"
     );
 
     @Override
