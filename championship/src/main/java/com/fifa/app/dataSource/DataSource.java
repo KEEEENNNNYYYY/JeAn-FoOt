@@ -19,8 +19,8 @@ public class DataSource {
     // Constructeur pour initialiser les variables avec les valeurs par défaut
     public DataSource() {
         this.url = "jdbc:postgresql://localhost:5432/jean_foot?sslmode=disable";
-        this.user = "postgres";
-        this.password = "0000";
+        this.user = "jean_foot";
+        this.password = "jeanfoot";
         this.port = 5432;
         this.database = "jean_foot";
     }

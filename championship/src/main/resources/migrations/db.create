@@ -107,7 +107,7 @@ CREATE TABLE match (
     stadium TEXT NOT NULL,
     match_datetime TIMESTAMP NOT NULL,
     actual_status match_status DEFAULT 'NOT_STARTED',
-
+    season_year INT DEFAULT 0,
     home_score INT DEFAULT 0,
     away_score INT DEFAULT 0,
 
