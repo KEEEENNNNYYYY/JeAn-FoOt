@@ -2,6 +2,7 @@ package com.fifa.app.RestControllers;
 
 import com.fifa.app.DAO.MatchGoalDAO;
 import com.fifa.app.DTO.MatchDisplayDTO;
+import com.fifa.app.Entities.GoalRequest;
 import com.fifa.app.Entities.Match;
 import com.fifa.app.Entities.MatchStatusUpdateRequest;
 import com.fifa.app.Services.MatchService;
@@ -71,7 +72,7 @@ public class MatchController {
     @PostMapping("/matches/{id}/goals")
     public ResponseEntity<?> addGoalsToMatch(
         @PathVariable String id,
-        @RequestBody List<MatchGoalDAO.GoalRequest> goalRequests) {
+        @RequestBody List<GoalRequest> goalRequests) {
         try {
             MatchDisplayDTO updatedMatch = matchGoalDAO.addGoalsToMatch(id, goalRequests);
             return ResponseEntity.ok(updatedMatch);
