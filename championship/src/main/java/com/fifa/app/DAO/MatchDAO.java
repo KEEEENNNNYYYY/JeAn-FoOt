@@ -257,6 +257,11 @@ public class MatchDAO {
 
         return scorers;
     }
+    /**
+     * option 1 avec club stat function
+     *
+     * option came pre-fix
+     */
 
     public MatchDisplayDTO updateMatchStatus(UUID matchId, String newStatusStr) {
         MatchStatus newStatus = MatchStatus.valueOf(newStatusStr);
@@ -338,12 +343,111 @@ public class MatchDAO {
         return updatedMatch;
     }
 
+    /**
+     * option 2 : sans update club stat function
+     *
+     * option 2 came post-fix
+     * @param matchId
+     * @param newStatusStr
+     * @return
+     */
+    /*public MatchDisplayDTO updateMatchStatus(UUID matchId, String newStatusStr) {
+        MatchStatus newStatus = MatchStatus.valueOf(newStatusStr);
+        MatchDisplayDTO updatedMatch = null;
+
+        String selectQuery = """
+    SELECT m.actual_status, m.club_playing_home_id, m.club_playing_away_id,
+           m.home_score, m.away_score, m.stadium, m.match_datetime,
+           home.name as home_name, home.acronym as home_acronym,
+           away.name as away_name, away.acronym as away_acronym
+    FROM match m
+    JOIN club home ON m.club_playing_home_id = home.id
+    JOIN club away ON m.club_playing_away_id = away.id
+    WHERE m.id = ?
+    """;
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(selectQuery)) {
+
+            stmt.setObject(1, matchId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (!rs.next()) throw new IllegalArgumentException("Match not found");
+
+                MatchStatus currentStatus = MatchStatus.valueOf(rs.getString("actual_status"));
+                UUID homeId = (UUID) rs.getObject("club_playing_home_id");
+                UUID awayId = (UUID) rs.getObject("club_playing_away_id");
+                int homeScore = rs.getInt("home_score");
+                int awayScore = rs.getInt("away_score");
+
+                if (!isValidStatusTransition(currentStatus, newStatus)) {
+                    throw new IllegalStateException("Invalid status transition");
+                }
+
+                String updateStatusSql = "UPDATE match SET actual_status = ?::match_status WHERE id = ?";
+                try (PreparedStatement updateStmt = conn.prepareStatement(updateStatusSql)) {
+                    updateStmt.setString(1, newStatus.name());
+                    updateStmt.setObject(2, matchId);
+                    updateStmt.executeUpdate();
+                }
+
+                // Supprimer l'appel à updateClubStatistics
+                // Les stats sont déjà mises à jour dans MatchGoalDAO
+
+                updatedMatch = new MatchDisplayDTO();
+                updatedMatch.setId(matchId.toString());
+                updatedMatch.setStadium(rs.getString("stadium"));
+                updatedMatch.setMatchDatetime(LocalDate.from(rs.getTimestamp("match_datetime").toLocalDateTime()));
+                updatedMatch.setActualStatus(newStatus);
+
+                ClubPlaying home = new ClubPlaying();
+                home.setId(homeId.toString());
+                home.setAcronym(rs.getString("home_acronym"));
+                home.setName(rs.getString("home_name"));
+                home.setScore(homeScore);
+
+                ClubPlaying away = new ClubPlaying();
+                away.setId(awayId.toString());
+                away.setAcronym(rs.getString("away_acronym"));
+                away.setName(rs.getString("away_name"));
+                away.setScore(awayScore);
+
+                home.setScorers(new ArrayList<>());
+                away.setScorers(new ArrayList<>());
+
+                updatedMatch.setClubPlayingHome(home);
+                updatedMatch.setClubPlayingAway(away);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Erreur lors de la mise à jour du statut du match", e);
+        }
+
+        return updatedMatch;
+    }*/
+
+
     private boolean isValidStatusTransition(MatchStatus current, MatchStatus next) {
         List<MatchStatus> order = List.of(MatchStatus.NOT_STARTED, MatchStatus.STARTED, MatchStatus.FINISHED);
         return order.indexOf(next) > order.indexOf(current);
     }
 
-    private void updateClubStatistics(Connection conn, UUID homeId, UUID awayId, int homeScore, int awayScore) throws SQLException {
+    /**
+     * option 1 fecth all data , may happen that there will be a second update on database ,
+     * leading to a wrong result ,
+     *
+     * dev can keep this methode (option 1) but must change things inside mathcGoalDAO
+     * especially , handle update score and statistic
+     *
+     * option came pre-fix
+     * @param conn
+     * @param homeId
+     * @param awayId
+     * @param homeScore
+     * @param awayScore
+     * @throws SQLException
+     */
+    /*private void updateClubStatistics(Connection conn, UUID homeId, UUID awayId, int homeScore, int awayScore) throws SQLException {
         int homePoints = 0, awayPoints = 0;
         if (homeScore > awayScore) {
             homePoints = 3;
@@ -384,6 +488,52 @@ public class MatchDAO {
             updateAway.setInt(5, homeScore);
             updateAway.setInt(6, homeScore);
             updateAway.setObject(7, awayId);
+            updateAway.executeUpdate();
+        }
+    }*/
+
+    /**
+     * option 2 ! no score or conced goal update , this mean ,
+     * dev don't need to change matchGoalDAO
+     *
+     * option 2 came post-fix
+     */
+    private void updateClubStatistics(Connection conn, UUID homeId, UUID awayId, int homeScore, int awayScore) throws SQLException {
+        int homePoints = 0, awayPoints = 0;
+        if (homeScore > awayScore) {
+            homePoints = 3;
+        } else if (awayScore > homeScore) {
+            awayPoints = 3;
+        } else {
+            homePoints = 1;
+            awayPoints = 1;
+        }
+
+        String updateStatsSql = """
+    UPDATE club_statistic
+    SET rankingPoints = COALESCE(rankingPoints,0) + ?,
+        differenceGoals = COALESCE(differenceGoals,0) + (? - ?),
+        cleanSheetNumber = cleanSheetNumber + (CASE WHEN ? = 0 THEN 1 ELSE 0 END)
+    WHERE club_id = ?
+    """;
+
+        try (PreparedStatement updateHome = conn.prepareStatement(updateStatsSql);
+             PreparedStatement updateAway = conn.prepareStatement(updateStatsSql)) {
+
+            // Mise à jour pour l'équipe à domicile
+            updateHome.setInt(1, homePoints);
+            updateHome.setInt(2, homeScore);  // buts marqués pour différence
+            updateHome.setInt(3, awayScore);  // buts encaissés pour différence
+            updateHome.setInt(4, awayScore);  // pour clean sheet (si adversaire a marqué 0)
+            updateHome.setObject(5, homeId);
+            updateHome.executeUpdate();
+
+            // Mise à jour pour l'équipe à l'extérieur
+            updateAway.setInt(1, awayPoints);
+            updateAway.setInt(2, awayScore);  // buts marqués pour différence
+            updateAway.setInt(3, homeScore);  // buts encaissés pour différence
+            updateAway.setInt(4, homeScore);  // pour clean sheet (si adversaire a marqué 0)
+            updateAway.setObject(5, awayId);
             updateAway.executeUpdate();
         }
     }
