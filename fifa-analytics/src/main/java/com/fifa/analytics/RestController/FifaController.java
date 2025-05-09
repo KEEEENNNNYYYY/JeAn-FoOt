@@ -8,6 +8,7 @@ import com.fifa.analytics.Services.ClubService;
 import com.fifa.analytics.Services.PlayerService;
 import com.fifa.analytics.Services.SynchronizationService;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,7 +32,7 @@ public class FifaController {
 
     @PostMapping("synchronization")
     public ResponseEntity<String> synchronisation(){
-        synchronizationService.synchronize().subscribe();
+        synchronizationService.synchronize().block();
         return ResponseEntity.ok("Synchronization completed");
     }
 

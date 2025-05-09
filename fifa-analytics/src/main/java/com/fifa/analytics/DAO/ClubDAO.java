@@ -60,7 +60,6 @@ public class ClubDAO {
                 "coach_id = EXCLUDED.coach_id " +
                 "RETURNING id, name, acronym, year_creation,stadium,coach_id,championship";
         clubs.forEach((club) -> {
-            System.out.println("clubId: " + club.getId());
             try(Connection connection = dataConnection.getConnection()){
                 PreparedStatement preparedStatement = connection.prepareStatement(query);
                 preparedStatement.setString(1, club.getId());

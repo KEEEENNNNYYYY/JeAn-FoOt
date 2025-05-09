@@ -56,8 +56,6 @@ public class PlayerDAO {
 
     public List<Player> saveAll(List<Player> players) {
         List<Player> savedPlayers = new ArrayList<>();
-        System.out.println("try to save players");
-
         String query = "INSERT INTO players (id, name, number, nationality, position, age, club_id) " +
                 "VALUES (?::UUID, ?, ?, ?, ?, ?, ?::UUID) " +
                 "ON CONFLICT (id) DO UPDATE SET " +
@@ -83,7 +81,6 @@ public class PlayerDAO {
                 if(resultSet.next()){
                     Player p = mapFromResultSet(resultSet);
                     savedPlayers.add(p);
-                    System.out.println("saved 1 player");
                 }
             }catch (SQLException e) {
                 throw new RuntimeException(e);

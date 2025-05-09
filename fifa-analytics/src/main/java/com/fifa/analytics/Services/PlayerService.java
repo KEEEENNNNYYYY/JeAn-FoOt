@@ -68,7 +68,8 @@ public class PlayerService {
                                 if(playingTimeUnit == DurationUnit.HOUR){
                                     time =  time / 3600;
                                 }
-                                playerStatistics.getPlayingTime().setValue(Double.valueOf(df.format(time)));
+                                Double t = time.doubleValue();
+                                playerStatistics.getPlayingTime().setValue(t);
                             })
                             .findFirst()
                             .orElse(null);
